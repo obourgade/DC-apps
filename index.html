@@ -124,10 +124,10 @@
             background-color: #EF4444;
         }
         
-        /* Badge Generator Styles */
+        /* Badge Generator Styles - A4 quarter size */
         .badge-card {
-            width: 3.375in;
-            height: 2.125in;
+            width: 105mm;
+            height: 148.5mm;  /* A4 divided by 4 (2x2 layout) */
             border: 1px solid #ddd;
             border-radius: 10px;
             overflow: hidden;
@@ -142,36 +142,42 @@
         .badge-header {
             background-color: #5D5CDE;
             color: white;
-            padding: 10px 15px;
+            padding: 15px;
             text-align: center;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
         }
         
         .badge-content {
-            padding: 15px;
+            padding: 20px;
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100% - 140px);
         }
         
         .badge-info {
-            flex: 1;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
         }
         
         .badge-name {
-            font-size: 18px;
+            font-size: 24px;
             font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .badge-role {
-            font-size: 14px;
-            color: #666;
             margin-bottom: 10px;
         }
         
+        .badge-role {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
         .badge-qr {
-            width: 100px;
-            height: 100px;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
         }
         
         .badge-footer {
@@ -180,9 +186,9 @@
             left: 0;
             right: 0;
             text-align: center;
-            padding: 5px;
-            font-size: 12px;
-            color: #888;
+            padding: 10px;
+            font-size: 14px;
+            color: #666;
             background-color: #f9f9f9;
         }
         
@@ -1072,7 +1078,7 @@
             const badgeQR = document.createElement('div');
             badgeQR.className = 'badge-qr';
             
-            // Add info and QR to content
+            // Add info and QR to content (in the right order)
             badgeContent.appendChild(badgeInfo);
             badgeContent.appendChild(badgeQR);
             
@@ -1093,8 +1099,8 @@
                 
                 new QRCode(badgeQR, {
                     text: attendeeUrl,
-                    width: 100,
-                    height: 100,
+                    width: 180,
+                    height: 180,
                     colorDark: '#000000',
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.H
@@ -1150,7 +1156,7 @@
             }
         }
         
-        // Export badges to PDF
+        // Export badges to PDF with A4 paper size
         async function exportBadgesToPdf(badgeElements, filename) {
             if (!badgeElements || badgeElements.length === 0) {
                 alert('No badges to export');
@@ -1164,28 +1170,43 @@
                 loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating PDF...';
                 document.body.appendChild(loadingMessage);
                 
-                // Initialize jsPDF
+                // Initialize jsPDF with A4 size
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'in',
-                    format: [3.5, 2.25] // Slightly larger than the badge to ensure margins
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4',
                 });
+                
+                // A4 dimensions
+                const pageWidth = 210;
+                const pageHeight = 297;
+                
+                // Badge dimensions (A4 divided by 4 - 2x2 layout)
+                const badgeWidth = 105;
+                const badgeHeight = 148.5;
                 
                 // Process each badge
                 for (let i = 0; i < badgeElements.length; i++) {
-                    const badge = badgeElements[i];
-                    
-                    // Add a new page for each badge except the first one
-                    if (i > 0) {
+                    // Add a new page after every 4 badges (except before the first one)
+                    if (i > 0 && i % 4 === 0) {
                         pdf.addPage();
                     }
                     
+                    // Calculate position (2x2 grid)
+                    const column = i % 2;
+                    const row = Math.floor((i % 4) / 2);
+                    const xPos = column * badgeWidth;
+                    const yPos = row * badgeHeight;
+                    
                     // Create a clone of the badge for processing
+                    const badge = badgeElements[i];
                     const badgeClone = badge.cloneNode(true);
                     badgeClone.style.margin = '0';
                     badgeClone.style.borderRadius = '0';
                     badgeClone.style.boxShadow = 'none';
+                    badgeClone.style.width = `${badgeWidth}mm`;
+                    badgeClone.style.height = `${badgeHeight}mm`;
                     
                     // Temporarily add the clone to the document for rendering
                     badgeClone.style.position = 'fixed';
@@ -1205,7 +1226,7 @@
                     
                     // Add the canvas to PDF
                     const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 0.1, 0.1, 3.3, 2.05); // Slight margin
+                    pdf.addImage(imgData, 'PNG', xPos, yPos, badgeWidth, badgeHeight);
                 }
                 
                 // Save the PDF
