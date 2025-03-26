@@ -8,6 +8,8 @@
     <!-- Add QR code library for badge generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -344,8 +346,12 @@
                         <i class="fas fa-id-card-alt mr-1"></i> Generate All Badges
                     </button>
                     
-                    <button id="print-badges" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm">
-                        <i class="fas fa-print mr-1"></i> Print All Badges
+                    <button id="export-selected-badge-pdf" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm">
+                        <i class="fas fa-file-pdf mr-1"></i> Export Selected as PDF
+                    </button>
+                    
+                    <button id="export-all-badges-pdf" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm">
+                        <i class="fas fa-file-pdf mr-1"></i> Export All as PDF
                     </button>
                     
                     <button id="clear-badges" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-sm">
@@ -360,7 +366,7 @@
                 
                 <div id="badge-container" class="mt-4 flex flex-wrap justify-center"></div>
                 
-                <!-- Hidden container for printing -->
+                <!-- Hidden container for PDF export -->
                 <div id="badge-print-container" class="hidden"></div>
             </div>
             
@@ -645,7 +651,8 @@
         const badgeAttendeeSelect = document.getElementById('badge-attendee-select');
         const generateBadgeBtn = document.getElementById('generate-badge');
         const generateAllBadgesBtn = document.getElementById('generate-all-badges');
-        const printBadgesBtn = document.getElementById('print-badges');
+        const exportSelectedBadgePdfBtn = document.getElementById('export-selected-badge-pdf');
+        const exportAllBadgesPdfBtn = document.getElementById('export-all-badges-pdf');
         const clearBadgesBtn = document.getElementById('clear-badges');
         const badgePreview = document.getElementById('badge-preview');
         const badgePreviewContainer = document.getElementById('badge-preview-container');
@@ -1097,15 +1104,120 @@
             return badgeCard;
         }
         
-        // Print badges
-        function printBadges() {
-            if (badgePrintContainer.children.length === 0) {
-                alert('No badges to print. Generate badges first.');
+        // Export a single badge as PDF
+        async function exportSelectedBadgePdf() {
+            const selectedAttendeeId = badgeAttendeeSelect.value;
+            
+            if (!selectedAttendeeId) {
+                alert('Please select an attendee first');
                 return;
             }
             
-            // Print the badges
-            window.print();
+            const selectedAttendee = attendees.find(a => a.id === selectedAttendeeId);
+            
+            if (!selectedAttendee) {
+                alert('Selected attendee not found');
+                return;
+            }
+            
+            // If the badge hasn't been generated yet, generate it
+            if (!document.querySelector(`.badge-card[data-attendee-id="${selectedAttendeeId}"]`)) {
+                generateBadge();
+            }
+            
+            // Export the badge as PDF
+            const selectedBadge = document.querySelector(`.badge-card[data-attendee-id="${selectedAttendeeId}"]`);
+            if (selectedBadge) {
+                await exportBadgesToPdf([selectedBadge], `Badge - ${selectedAttendee.name}.pdf`);
+            } else {
+                alert('Failed to find the badge to export');
+            }
+        }
+        
+        // Export all badges as PDF
+        async function exportAllBadgesPdf() {
+            // If no badges have been generated yet, generate them
+            if (badgeContainer.children.length === 0) {
+                generateAllBadges();
+            }
+            
+            // Export all badges as a single PDF
+            if (badgeContainer.children.length > 0) {
+                const badgeElements = Array.from(badgeContainer.querySelectorAll('.badge-card'));
+                await exportBadgesToPdf(badgeElements, 'All Badges.pdf');
+            } else {
+                alert('No badges to export. Generate badges first.');
+            }
+        }
+        
+        // Export badges to PDF
+        async function exportBadgesToPdf(badgeElements, filename) {
+            if (!badgeElements || badgeElements.length === 0) {
+                alert('No badges to export');
+                return;
+            }
+            
+            try {
+                // Show loading message
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-blue-500 text-white py-2 text-center z-50';
+                loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating PDF...';
+                document.body.appendChild(loadingMessage);
+                
+                // Initialize jsPDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'in',
+                    format: [3.5, 2.25] // Slightly larger than the badge to ensure margins
+                });
+                
+                // Process each badge
+                for (let i = 0; i < badgeElements.length; i++) {
+                    const badge = badgeElements[i];
+                    
+                    // Add a new page for each badge except the first one
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+                    
+                    // Create a clone of the badge for processing
+                    const badgeClone = badge.cloneNode(true);
+                    badgeClone.style.margin = '0';
+                    badgeClone.style.borderRadius = '0';
+                    badgeClone.style.boxShadow = 'none';
+                    
+                    // Temporarily add the clone to the document for rendering
+                    badgeClone.style.position = 'fixed';
+                    badgeClone.style.left = '-9999px';
+                    document.body.appendChild(badgeClone);
+                    
+                    // Convert to canvas and add to PDF
+                    const canvas = await html2canvas(badgeClone, {
+                        scale: 2, // Higher quality
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: 'white'
+                    });
+                    
+                    // Remove the clone from document
+                    document.body.removeChild(badgeClone);
+                    
+                    // Add the canvas to PDF
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 0.1, 0.1, 3.3, 2.05); // Slight margin
+                }
+                
+                // Save the PDF
+                pdf.save(filename);
+                
+                // Remove loading message
+                document.body.removeChild(loadingMessage);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
         }
         
         // Clear all badges
@@ -1307,7 +1419,8 @@
         // Badge generator event listeners
         generateBadgeBtn.addEventListener('click', generateBadge);
         generateAllBadgesBtn.addEventListener('click', generateAllBadges);
-        printBadgesBtn.addEventListener('click', printBadges);
+        exportSelectedBadgePdfBtn.addEventListener('click', exportSelectedBadgePdf);
+        exportAllBadgesPdfBtn.addEventListener('click', exportAllBadgesPdf);
         clearBadgesBtn.addEventListener('click', clearBadges);
         
         // Handle attendees CSV upload
