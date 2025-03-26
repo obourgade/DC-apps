@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Development Center - Enhanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Add QR code library for badge generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -119,6 +121,92 @@
             border-radius: 50%;
             background-color: #EF4444;
         }
+        
+        /* Badge Generator Styles */
+        .badge-card {
+            width: 3.375in;
+            height: 2.125in;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            page-break-inside: avoid;
+            margin: 10px;
+            display: inline-block;
+        }
+        
+        .badge-header {
+            background-color: #5D5CDE;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .badge-content {
+            padding: 15px;
+            display: flex;
+        }
+        
+        .badge-info {
+            flex: 1;
+        }
+        
+        .badge-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .badge-role {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .badge-qr {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .badge-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 5px;
+            font-size: 12px;
+            color: #888;
+            background-color: #f9f9f9;
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            #badge-print-container, #badge-print-container * {
+                visibility: visible;
+            }
+            
+            #badge-print-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            
+            .badge-card {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin: 0;
+                box-shadow: none;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen font-sans">
@@ -132,6 +220,9 @@
         const GOOGLE_SHEET_ID = "your_google_sheet_id_here";
         const ATTENDEES_SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Attendees`;
         const MEETINGS_SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Meetings`;
+        
+        // Enable or disable maintenance mode
+        const MAINTENANCE_MODE = false; // Set to true to enable maintenance mode
     </script>
 
     <div class="container mx-auto px-4 py-6 max-w-6xl">
@@ -212,7 +303,7 @@
                     </div>
                     <div class="ml-3">
                         <p class="text-sm text-blue-700 dark:text-blue-300">
-                            <strong>GitHub Integration:</strong> Data is now loaded from GitHub-hosted CSV files. 
+                            <strong>GitHub CSV Integration:</strong> Data is loaded from GitHub-hosted CSV files.
                             To update for all users, edit the CSV files in your GitHub repository.
                         </p>
                     </div>
@@ -232,38 +323,76 @@
             </div>
             
             <div class="mb-6">
-                <h3 class="font-medium mb-2">2. GitHub CSV Files</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Data is loaded from these GitHub CSV files:</p>
+                <h3 class="font-medium mb-2">2. Badge Generator</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Generate attendee badges with QR codes for the agenda app</p>
                 
-                <div class="mb-4 bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm">
-                    <div class="mb-2">
-                        <label class="block font-medium mb-1 text-gray-700 dark:text-gray-300">Attendees CSV URL:</label>
-                        <div class="break-all">${GITHUB_ATTENDEES_URL}</div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Select Attendee:</label>
+                    <div class="flex gap-2">
+                        <select id="badge-attendee-select" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
+                            <option value="">-- Select an attendee --</option>
+                            <!-- Will be populated with JavaScript -->
+                        </select>
+                        <button id="generate-badge" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm whitespace-nowrap">
+                            <i class="fas fa-id-card mr-1"></i> Generate Badge
+                        </button>
                     </div>
-                    <div>
-                        <label class="block font-medium mb-1 text-gray-700 dark:text-gray-300">Meetings CSV URL:</label>
-                        <div class="break-all">${GITHUB_MEETINGS_URL}</div>
-                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button id="generate-all-badges" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm">
+                        <i class="fas fa-id-card-alt mr-1"></i> Generate All Badges
+                    </button>
+                    
+                    <button id="print-badges" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm">
+                        <i class="fas fa-print mr-1"></i> Print All Badges
+                    </button>
+                    
+                    <button id="clear-badges" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-sm">
+                        <i class="fas fa-trash-alt mr-1"></i> Clear All Badges
+                    </button>
+                </div>
+                
+                <div id="badge-preview" class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 hidden">
+                    <h4 class="text-sm font-medium mb-2">Badge Preview:</h4>
+                    <div id="badge-preview-container"></div>
+                </div>
+                
+                <div id="badge-container" class="mt-4 flex flex-wrap justify-center"></div>
+                
+                <!-- Hidden container for printing -->
+                <div id="badge-print-container" class="hidden"></div>
+            </div>
+            
+            <div class="mb-6">
+                <h3 class="font-medium mb-2">3. Maintenance Mode</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Enable or disable maintenance mode for the app</p>
+                
+                <div class="flex items-center gap-2 mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="maintenance-mode-toggle" class="mr-2">
+                        Enable Maintenance Mode
+                    </label>
                 </div>
                 
                 <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
                     <p class="text-xs text-yellow-700 dark:text-yellow-300">
                         <i class="fas fa-info-circle mr-1"></i>
-                        <strong>How to Update Data:</strong> To change the data, edit the CSV files in your GitHub repository. The changes will automatically appear for all users.
+                        <strong>Note:</strong> Enabling maintenance mode will show a message to all users that the app is temporarily unavailable. This setting will only persist until the next page reload in this environment.
                     </p>
                 </div>
-                
-                <button id="refresh-data-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
-                    <i class="fas fa-sync-alt mr-1"></i> Refresh Data from GitHub
-                </button>
             </div>
             
             <div class="mb-6">
-                <h3 class="font-medium mb-2">3. Manual Data Import (Advanced)</h3>
+                <h3 class="font-medium mb-2">4. Manual Data Import (Advanced)</h3>
                 
                 <div class="flex gap-2 mb-4">
                     <button id="toggle-csv-import" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-sm">
                         <i class="fas fa-file-csv mr-1"></i> Show CSV Import Options
+                    </button>
+                    
+                    <button id="refresh-data-from-github" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh From GitHub
                     </button>
                 </div>
                 
@@ -412,6 +541,25 @@
     </div>
 
     <script>
+        // Check for maintenance mode first
+        if (MAINTENANCE_MODE) {
+            document.body.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100 dark:bg-gray-900">
+                    <div class="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md text-center max-w-md">
+                        <h1 class="text-2xl font-bold text-red-600 mb-4">Maintenance Mode</h1>
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">
+                            This application is currently undergoing maintenance. 
+                            Please check back later.
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Expected return: Tomorrow
+                        </p>
+                    </div>
+                </div>
+            `;
+            // Stop the rest of the app from loading
+        }
+    
         // Check for dark mode preference
         function setThemePreference() {
             if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -491,7 +639,25 @@
         const dataPreview = document.getElementById('data-preview');
         const toggleAttendeesPreview = document.getElementById('toggle-attendees-preview');
         const toggleMeetingsPreview = document.getElementById('toggle-meetings-preview');
-        const refreshDataBtn = document.getElementById('refresh-data-btn');
+        const refreshDataBtn = document.getElementById('refresh-data-from-github');
+        
+        // Badge generator elements
+        const badgeAttendeeSelect = document.getElementById('badge-attendee-select');
+        const generateBadgeBtn = document.getElementById('generate-badge');
+        const generateAllBadgesBtn = document.getElementById('generate-all-badges');
+        const printBadgesBtn = document.getElementById('print-badges');
+        const clearBadgesBtn = document.getElementById('clear-badges');
+        const badgePreview = document.getElementById('badge-preview');
+        const badgePreviewContainer = document.getElementById('badge-preview-container');
+        const badgeContainer = document.getElementById('badge-container');
+        const badgePrintContainer = document.getElementById('badge-print-container');
+        
+        // Maintenance mode toggle
+        const maintenanceModeToggle = document.getElementById('maintenance-mode-toggle');
+        maintenanceModeToggle.checked = MAINTENANCE_MODE;
+        maintenanceModeToggle.addEventListener('change', function() {
+            alert('Maintenance mode setting will be applied on the next page reload. This setting is not persistent in this environment.');
+        });
         
         // Password elements
         const passwordModal = document.getElementById('password-modal');
@@ -540,12 +706,36 @@
                         // Parse attendees CSV
                         const attendeesResults = Papa.parse(attendeesCsv, { header: true, skipEmptyLines: true });
                         
-                        // Process attendees data - handle potential different column names
-                        attendees = attendeesResults.data.map(row => ({
-                            id: row.id || row.ID || row["ID"] || "",
-                            name: row.name || row.Name || row["Name"] || "",
-                            role: (row.role || row.Role || row["Role"] || "participant").toLowerCase()
-                        }));
+                        // Process attendees data - handle potential different column names and BOM characters
+                        attendees = attendeesResults.data.map(row => {
+                            // Get the ID - handle various column names and trim whitespace
+                            let id = "";
+                            if (row.id) id = row.id.trim();
+                            else if (row.ID) id = row.ID.trim();
+                            else if (row["ID"]) id = row["ID"].trim();
+                            else if (row["﻿ID"]) id = row["﻿ID"].trim(); // Handle BOM character
+                            
+                            // Get the name - handle various column names and trim whitespace
+                            let name = "";
+                            if (row.name) name = row.name.trim();
+                            else if (row.Name) name = row.Name.trim();
+                            else if (row["Name"]) name = row["Name"].trim();
+                            else if (row["﻿Name"]) name = row["﻿Name"].trim(); // Handle BOM character
+                            else if (row["Name "]) name = row["Name "].trim(); // Handle extra space
+                            
+                            // Get the role - handle various column names, defaults, and convert to lowercase
+                            let role = "participant"; // Default role
+                            if (row.role) role = row.role.toLowerCase().trim();
+                            else if (row.Role) role = row.Role.toLowerCase().trim();
+                            else if (row["Role"]) role = row["Role"].toLowerCase().trim();
+                            else if (row["﻿Role"]) role = row["﻿Role"].toLowerCase().trim(); // Handle BOM character
+                            else if (row["Role "]) role = row["Role "].toLowerCase().trim(); // Handle extra space
+                            
+                            // Debug log
+                            console.log(`Processed attendee: id=${id}, name=${name}, role=${role}`);
+                            
+                            return { id, name, role };
+                        }).filter(attendee => attendee.id && attendee.name); // Filter out any empty entries
                         
                         console.log(`Loaded ${attendees.length} attendees from GitHub`);
                         
@@ -561,32 +751,38 @@
                         // Parse meetings CSV
                         const meetingsResults = Papa.parse(meetingsCsv, { header: true, skipEmptyLines: true });
                         
+                        // Debug: Log the column headers
+                        console.log("Meeting CSV headers:", Object.keys(meetingsResults.data[0]).join(", "));
+                        
                         // Process meetings data - handle different column structure
                         meetings = meetingsResults.data.map(row => {
                             // Map column names to expected properties
                             const meetingInfo = {
-                                id: row.id || row.ID || row["Meeting ID"] || "",
-                                title: row.title || row.Title || row["Meeting Title"] || "",
-                                start: row.start || row.Start || row["Start Time"] || "",
-                                end: row.end || row.End || row["End Time"] || "",
-                                location: row.location || row.Location || row["Location"] || "",
+                                id: row.id || row.ID || row["Meeting ID"] || row["Meeting ID "] || "",
+                                title: row.title || row.Title || row["Meeting Title"] || row["Meeting Title "] || "",
+                                start: row.start || row.Start || row["Start Time"] || row["Start Time "] || "",
+                                end: row.end || row.End || row["End Time"] || row["End Time "] || "",
+                                location: row.location || row.Location || row["Location"] || row["Location "] || "",
                                 participants: []
                             };
                             
-                            // Extract attendee IDs from columns
-                            for (const [key, value] of Object.entries(row)) {
-                                // Skip the main meeting info columns
-                                if (["id", "ID", "Meeting ID", "title", "Title", "Meeting Title", 
-                                    "start", "Start", "Start Time", "end", "End", "End Time", 
-                                    "location", "Location"].includes(key)) {
-                                    continue;
-                                }
+                            // Log the raw row data to see what we're getting
+                            console.log("Raw meeting row:", JSON.stringify(row));
+                            
+                            // Extract attendee IDs using a more direct approach
+                            let participantCount = 0;
+                            Object.entries(row).forEach(([key, value], index) => {
+                                // Skip the first 5 columns (meeting details)
+                                if (index < 5) return;
                                 
                                 // If there's a value and it's not empty, add it as participant ID
                                 if (value && String(value).trim() !== "") {
                                     meetingInfo.participants.push(String(value).trim());
+                                    participantCount++;
                                 }
-                            }
+                            });
+                            
+                            console.log(`Meeting ${meetingInfo.id} has ${participantCount} participants added`);
                             
                             return meetingInfo;
                         });
@@ -753,6 +949,172 @@
             errorMessage.classList.add('hidden');
         }
         
+        // Populate badge attendee dropdown when admin panel is opened
+        function populateBadgeAttendeeDropdown() {
+            // Clear existing options except the default one
+            while (badgeAttendeeSelect.options.length > 1) {
+                badgeAttendeeSelect.remove(1);
+            }
+            
+            // Sort attendees by name
+            const sortedAttendees = [...attendees].sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Add attendees to dropdown
+            sortedAttendees.forEach(attendee => {
+                const option = document.createElement('option');
+                option.value = attendee.id;
+                option.textContent = attendee.name;
+                badgeAttendeeSelect.appendChild(option);
+            });
+        }
+        
+        // Generate a badge for a specific attendee
+        function generateBadge() {
+            const selectedAttendeeId = badgeAttendeeSelect.value;
+            
+            if (!selectedAttendeeId) {
+                alert('Please select an attendee');
+                return;
+            }
+            
+            const selectedAttendee = attendees.find(a => a.id === selectedAttendeeId);
+            
+            if (!selectedAttendee) {
+                alert('Selected attendee not found');
+                return;
+            }
+            
+            // Create badge card
+            const badgeCard = createBadgeCard(selectedAttendee);
+            
+            // Show preview
+            badgePreviewContainer.innerHTML = '';
+            badgePreviewContainer.appendChild(badgeCard.cloneNode(true));
+            badgePreview.classList.remove('hidden');
+            
+            // Add to badge container
+            badgeContainer.appendChild(badgeCard);
+            
+            // Add to print container
+            badgePrintContainer.appendChild(badgeCard.cloneNode(true));
+        }
+        
+        // Generate badges for all attendees
+        function generateAllBadges() {
+            // Clear containers
+            badgeContainer.innerHTML = '';
+            badgePrintContainer.innerHTML = '';
+            
+            // Sort attendees by name
+            const sortedAttendees = [...attendees].sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Generate badges for all attendees
+            sortedAttendees.forEach(attendee => {
+                const badgeCard = createBadgeCard(attendee);
+                badgeContainer.appendChild(badgeCard);
+                badgePrintContainer.appendChild(badgeCard.cloneNode(true));
+            });
+            
+            // Hide preview
+            badgePreview.classList.add('hidden');
+        }
+        
+        // Create a badge card for an attendee
+        function createBadgeCard(attendee) {
+            // Create badge elements
+            const badgeCard = document.createElement('div');
+            badgeCard.className = 'badge-card';
+            badgeCard.setAttribute('data-attendee-id', attendee.id);
+            
+            // Create badge header
+            const badgeHeader = document.createElement('div');
+            badgeHeader.className = 'badge-header';
+            badgeHeader.textContent = 'Development Center - Lille 2025';
+            
+            // Create badge content
+            const badgeContent = document.createElement('div');
+            badgeContent.className = 'badge-content';
+            
+            // Create attendee info section
+            const badgeInfo = document.createElement('div');
+            badgeInfo.className = 'badge-info';
+            
+            // Create name element
+            const badgeName = document.createElement('div');
+            badgeName.className = 'badge-name';
+            badgeName.textContent = attendee.name;
+            
+            // Create role element
+            const badgeRole = document.createElement('div');
+            badgeRole.className = 'badge-role';
+            
+            // Format role for display
+            let roleDisplay = attendee.role || 'Participant';
+            roleDisplay = roleDisplay.split(',')
+                .map(role => role.trim())
+                .map(role => role.charAt(0).toUpperCase() + role.slice(1))
+                .join(', ');
+            
+            badgeRole.textContent = roleDisplay;
+            
+            // Add name and role to info section
+            badgeInfo.appendChild(badgeName);
+            badgeInfo.appendChild(badgeRole);
+            
+            // Create QR code container
+            const badgeQR = document.createElement('div');
+            badgeQR.className = 'badge-qr';
+            
+            // Add info and QR to content
+            badgeContent.appendChild(badgeInfo);
+            badgeContent.appendChild(badgeQR);
+            
+            // Create badge footer
+            const badgeFooter = document.createElement('div');
+            badgeFooter.className = 'badge-footer';
+            badgeFooter.textContent = 'Scan QR code to view your agenda';
+            
+            // Assemble the badge
+            badgeCard.appendChild(badgeHeader);
+            badgeCard.appendChild(badgeContent);
+            badgeCard.appendChild(badgeFooter);
+            
+            // Generate QR code (after adding to DOM)
+            setTimeout(() => {
+                const currentUrl = window.location.href.split('?')[0]; // Get base URL without parameters
+                const attendeeUrl = `${currentUrl}?attendee=${attendee.id}`;
+                
+                new QRCode(badgeQR, {
+                    text: attendeeUrl,
+                    width: 100,
+                    height: 100,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }, 0);
+            
+            return badgeCard;
+        }
+        
+        // Print badges
+        function printBadges() {
+            if (badgePrintContainer.children.length === 0) {
+                alert('No badges to print. Generate badges first.');
+                return;
+            }
+            
+            // Print the badges
+            window.print();
+        }
+        
+        // Clear all badges
+        function clearBadges() {
+            badgeContainer.innerHTML = '';
+            badgePrintContainer.innerHTML = '';
+            badgePreview.classList.add('hidden');
+        }
+        
         // Role filter change event handler
         roleFilter.addEventListener('change', populateAttendeeDropdown);
         
@@ -870,6 +1232,9 @@
                 hidePasswordModal();
                 adminPanel.classList.remove('hidden');
                 
+                // Populate badge dropdown when admin panel is opened
+                populateBadgeAttendeeDropdown();
+                
                 // Load data preview
                 showDataPreview('attendees');
             } else {
@@ -914,6 +1279,9 @@
             await loadData();
             dataPreview.innerHTML = '<p class="text-green-500">✓ Data refreshed successfully from GitHub.</p>';
             showDataPreview('attendees');
+            
+            // Update badge dropdown after refreshing data
+            populateBadgeAttendeeDropdown();
         });
         
         // Toggle CSV import options
@@ -935,6 +1303,12 @@
         
         toggleAttendeesPreview.addEventListener('click', () => showDataPreview('attendees'));
         toggleMeetingsPreview.addEventListener('click', () => showDataPreview('meetings'));
+        
+        // Badge generator event listeners
+        generateBadgeBtn.addEventListener('click', generateBadge);
+        generateAllBadgesBtn.addEventListener('click', generateAllBadges);
+        printBadgesBtn.addEventListener('click', printBadges);
+        clearBadgesBtn.addEventListener('click', clearBadges);
         
         // Handle attendees CSV upload
         function handleAttendeesCsvUpload(event) {
@@ -965,6 +1339,7 @@
                         if (newAttendees.length > 0) {
                             attendees = newAttendees;
                             populateAttendeeDropdown();
+                            populateBadgeAttendeeDropdown();
                             showDataPreview('attendees');
                             
                             // Show success message
