@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sourcing Academy - Development Center</title>
+    <title>Development Center - Enhanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -14,54 +15,209 @@
                 extend: {
                     colors: {
                         primary: '#5D5CDE',
+                        secondary: '#6D28D9',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
-</head>
-<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <!-- Logo Container -->
-        <div id="logo-container" class="mb-4 flex justify-center items-center hidden">
-            <img id="app-logo" src="" alt="Logo" class="max-h-24 max-w-full" />
-        </div>
+    <style>
+        /* Custom styles */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
         
-        <!-- App content will go here -->
-        <h1 class="text-3xl font-bold text-center mb-6 text-primary">Sourcing Academy<br>Development Center<br>Lille July 2025</h1>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .card-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #5D5CDE;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .meeting-card {
+            border-left: 4px solid #5D5CDE;
+            transition: all 0.3s ease;
+        }
+        
+        .meeting-card:hover {
+            border-left-width: 6px;
+        }
+        
+        .badge {
+            transition: all 0.2s ease;
+        }
+        
+        .badge:hover {
+            transform: scale(1.05);
+        }
+
+        /* For the timeline */
+        .timeline-container {
+            position: relative;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            left: 24px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #5D5CDE;
+            z-index: 1;
+        }
+        
+        .timeline-item {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            left: 20px;
+            top: 30px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #5D5CDE;
+            border: 2px solid white;
+        }
+
+        .dark .timeline-dot {
+            border-color: #1f2937;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #EF4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen font-sans">
+    <!-- GitHub CSV URLs -->
+    <script>
+        // URLs for fetching data from GitHub-hosted CSV files
+        const GITHUB_ATTENDEES_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/attendees.csv";
+        const GITHUB_MEETINGS_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/meetings.csv";
+        
+        // Google Sheets configuration (backup)
+        const GOOGLE_SHEET_ID = "your_google_sheet_id_here";
+        const ATTENDEES_SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Attendees`;
+        const MEETINGS_SHEET_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Meetings`;
+    </script>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <div id="logo-container" class="flex justify-center items-center mb-4 hidden">
+                <img id="app-logo" src="" alt="Logo" class="max-h-24 max-w-full" />
+            </div>
+            
+            <h1 class="text-3xl md:text-4xl font-bold text-center mb-2 text-primary">
+                Development Center
+            </h1>
+            <h2 class="text-xl md:text-2xl font-medium text-center text-gray-600 dark:text-gray-400">
+                Lille July 2025
+            </h2>
+            
+            <!-- Theme Toggle with sun/moon icons -->
+            <div class="flex justify-center mt-4">
+                <button id="theme-toggle" class="bg-gray-200 dark:bg-gray-800 p-2 rounded-full">
+                    <i class="fas fa-moon hidden dark:block text-yellow-300"></i>
+                    <i class="fas fa-sun block dark:hidden text-yellow-500"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Loading State -->
+        <div id="loading-container" class="flex flex-col items-center justify-center py-12">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-lg text-gray-600 dark:text-gray-400">Loading data...</p>
+        </div>
         
         <!-- Admin Panel Toggle -->
         <div id="admin-toggle-container" class="text-center mb-4">
-            <button id="admin-toggle" class="text-sm text-primary underline">Admin Controls</button>
+            <button id="admin-toggle" class="text-sm text-primary hover:text-primary-dark underline">
+                <i class="fas fa-lock mr-1"></i> Admin Controls
+            </button>
         </div>
         
         <!-- Password Modal -->
-        <div id="password-modal" class="max-w-sm mx-auto mb-4 p-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg hidden">
-            <h3 class="text-lg font-bold mb-3">Enter Admin Password</h3>
-            <div class="mb-4">
-                <input type="password" id="admin-password" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700" placeholder="Password" />
-            </div>
-            <div class="flex justify-between">
-                <button id="cancel-password" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded">Cancel</button>
-                <button id="submit-password" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded">Submit</button>
-            </div>
-            <p id="password-error" class="mt-2 text-red-500 text-sm hidden">Incorrect password. Please try again.</p>
-            <div class="mt-3 text-sm">
-                <label class="flex items-center">
-                    <input type="checkbox" id="set-password" class="mr-2">
-                    Set a new password
-                </label>
-                <div id="new-password-container" class="mt-2 hidden">
-                    <input type="password" id="new-password" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 mb-2" placeholder="New Password" />
-                    <input type="password" id="confirm-password" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700" placeholder="Confirm Password" />
-                    <p id="password-mismatch" class="mt-1 text-red-500 text-xs hidden">Passwords don't match</p>
+        <div id="password-modal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 hidden fade-in">
+            <div class="max-w-sm w-full mx-auto p-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl">
+                <h3 class="text-lg font-bold mb-3">Enter Admin Password</h3>
+                <div class="mb-4">
+                    <input type="password" id="admin-password" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700" placeholder="Password" />
+                </div>
+                <div class="flex justify-between">
+                    <button id="cancel-password" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition">Cancel</button>
+                    <button id="submit-password" class="px-4 py-2 bg-primary hover:bg-primary-600 text-white rounded transition">Submit</button>
+                </div>
+                <p id="password-error" class="mt-2 text-red-500 text-sm hidden">Incorrect password. Please try again.</p>
+                <div class="mt-3 text-sm">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="set-password" class="mr-2">
+                        Set a new password
+                    </label>
+                    <div id="new-password-container" class="mt-2 hidden">
+                        <input type="password" id="new-password" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 mb-2" placeholder="New Password" />
+                        <input type="password" id="confirm-password" class="w-full p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700" placeholder="Confirm Password" />
+                        <p id="password-mismatch" class="mt-1 text-red-500 text-xs hidden">Passwords don't match</p>
+                    </div>
                 </div>
             </div>
         </div>
         
         <!-- Admin Panel -->
-        <div id="admin-panel" class="max-w-2xl mx-auto mb-8 p-4 border border-gray-300 dark:border-gray-700 rounded-lg hidden">
-            <h2 class="text-xl font-bold mb-4">Admin Panel - Import Data</h2>
+        <div id="admin-panel" class="max-w-4xl mx-auto mb-8 p-6 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg bg-white dark:bg-gray-800 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Admin Panel</h2>
+                <button id="close-admin" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900 border-l-4 border-blue-500 p-4 mb-6 rounded">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>GitHub Integration:</strong> Data is now loaded from GitHub-hosted CSV files. 
+                            To update for all users, edit the CSV files in your GitHub repository.
+                        </p>
+                    </div>
+                </div>
+            </div>
             
             <div class="mb-6">
                 <h3 class="font-medium mb-2">1. Upload Logo</h3>
@@ -76,20 +232,59 @@
             </div>
             
             <div class="mb-6">
-                <h3 class="font-medium mb-2">2. Import Attendees CSV</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">CSV format: id,name (e.g., "1,John Smith")</p>
-                <div class="flex items-center gap-2">
-                    <input type="file" id="attendees-csv" accept=".csv" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
-                    <button id="download-attendee-template" class="text-sm text-primary">Get Template</button>
+                <h3 class="font-medium mb-2">2. GitHub CSV Files</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Data is loaded from these GitHub CSV files:</p>
+                
+                <div class="mb-4 bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm">
+                    <div class="mb-2">
+                        <label class="block font-medium mb-1 text-gray-700 dark:text-gray-300">Attendees CSV URL:</label>
+                        <div class="break-all">${GITHUB_ATTENDEES_URL}</div>
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1 text-gray-700 dark:text-gray-300">Meetings CSV URL:</label>
+                        <div class="break-all">${GITHUB_MEETINGS_URL}</div>
+                    </div>
                 </div>
+                
+                <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>How to Update Data:</strong> To change the data, edit the CSV files in your GitHub repository. The changes will automatically appear for all users.
+                    </p>
+                </div>
+                
+                <button id="refresh-data-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+                    <i class="fas fa-sync-alt mr-1"></i> Refresh Data from GitHub
+                </button>
             </div>
             
             <div class="mb-6">
-                <h3 class="font-medium mb-2">3. Import Meetings CSV</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">CSV format: id,title,start,end,location,participants (e.g., "m1,Meeting Title,2023-06-01T09:00:00,2023-06-01T10:00:00,Room A,1,2,3,4")</p>
-                <div class="flex items-center gap-2">
-                    <input type="file" id="meetings-csv" accept=".csv" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
-                    <button id="download-meeting-template" class="text-sm text-primary">Get Template</button>
+                <h3 class="font-medium mb-2">3. Manual Data Import (Advanced)</h3>
+                
+                <div class="flex gap-2 mb-4">
+                    <button id="toggle-csv-import" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-sm">
+                        <i class="fas fa-file-csv mr-1"></i> Show CSV Import Options
+                    </button>
+                </div>
+                
+                <div id="csv-import-container" class="hidden">
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium mb-1">Import Attendees CSV</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">CSV format: id,name,role</p>
+                        <div class="flex items-center gap-2">
+                            <input type="file" id="attendees-csv" accept=".csv" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
+                            <button id="download-attendee-template" class="text-sm text-primary">Get Template</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="text-sm font-medium mb-1">Import Meetings CSV</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">CSV format: id,title,start,end,location,participants</p>
+                        <div class="flex items-center gap-2">
+                            <input type="file" id="meetings-csv" accept=".csv" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
+                            <button id="download-meeting-template" class="text-sm text-primary">Get Template</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -102,180 +297,193 @@
                     </div>
                 </div>
                 <div id="data-preview" class="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg max-h-40 overflow-y-auto text-xs">
-                    <p class="text-center text-gray-500">Import data to see preview</p>
+                    <p class="text-center text-gray-500">Loading data preview...</p>
                 </div>
             </div>
             
             <div class="text-center">
-                <button id="close-admin" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded">Close Admin Panel</button>
+                <button id="close-admin-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded">
+                    Close Admin Panel
+                </button>
             </div>
         </div>
         
-        <!-- Main app sections -->
-        <div id="welcome-screen" class="mb-8">
-            <p class="text-center mb-4">Welcome!<br>Select your name to view your personalized schedule,<br>or scan your QR code.</p>
+        <!-- Main Content Sections -->
+        <div id="main-content" class="hidden">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 text-center fade-in">
+                    <p class="text-lg mb-4">Welcome!<br>Select your name to view your personalized schedule.</p>
+                    
+                    <div class="max-w-md mx-auto">
+                        <!-- Role Filter Dropdown -->
+                        <div class="mb-4">
+                            <label for="role-filter" class="block mb-2 font-medium">Filter by role:</label>
+                            <select id="role-filter" class="w-full p-3 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary text-base">
+                                <option value="all">All Attendees</option>
+                                <option value="participant">Participants</option>
+                                <option value="observer-roleplayer">Observers & Role Players</option>
+                            </select>
+                        </div>
+                        
+                        <label for="attendee-select" class="block mb-2 font-medium">Select your name:</label>
+                        <select id="attendee-select" class="w-full p-3 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary text-base">
+                            <option value="">-- Select your name --</option>
+                            <!-- Will be populated with JavaScript -->
+                        </select>
+                        <button id="view-agenda-btn" class="mt-4 w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded transition">
+                            <i class="fas fa-calendar-alt mr-2"></i> View My Agenda
+                        </button>
+                        <p id="error-message" class="mt-2 text-red-500 text-center hidden"></p>
+                    </div>
+                </div>
+            </div>
             
-            <div class="max-w-md mx-auto">
-                <!-- Role Filter Dropdown -->
-                <div class="mb-4">
-                    <label for="role-filter" class="block mb-2 font-medium">Filter by role:</label>
-                    <select id="role-filter" class="w-full p-3 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary text-base">
-                        <option value="all">All Attendees</option>
-                        <option value="participant">Participants</option>
-                        <option value="observer-roleplayer">Observers & Role Players</option>
-                    </select>
+            <!-- Personal Agenda Screen -->
+            <div id="personal-agenda" class="hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded transition flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i> Back
+                    </button>
+                    <h2 id="attendee-name" class="text-xl font-bold text-primary"></h2>
                 </div>
                 
-                <label for="attendee-select" class="block mb-2 font-medium">Select your name:</label>
-                <select id="attendee-select" class="w-full p-3 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 focus:ring-primary focus:border-primary text-base">
-                    <option value="">-- Select your name --</option>
-                    <!-- Will be populated with JavaScript -->
-                </select>
-                <button id="view-agenda-btn" class="mt-4 w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded transition">
-                    View My Agenda
-                </button>
-                <p id="error-message" class="mt-2 text-red-500 text-center hidden"></p>
-            </div>
-            
-            <div class="mt-8 text-center">
-                <p class="mb-4">To generate your personal QR code:</p>
-                <div class="flex justify-center">
-                    <div id="qr-container" class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md"></div>
+                <!-- Schedule Overview -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Your Schedule Overview</h3>
+                    <div id="schedule-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg text-center">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Meetings</p>
+                            <p id="total-meetings" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0</p>
+                        </div>
+                        <div class="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg text-center">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Today's Meetings</p>
+                            <p id="today-meetings" class="text-2xl font-bold text-purple-600 dark:text-purple-400">0</p>
+                        </div>
+                        <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg text-center">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Next Meeting</p>
+                            <p id="next-meeting" class="text-xl font-bold text-green-600 dark:text-green-400">--:--</p>
+                        </div>
+                        <div class="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-lg text-center">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Meeting Hours</p>
+                            <p id="meeting-hours" class="text-2xl font-bold text-amber-600 dark:text-amber-400">0h</p>
+                        </div>
+                    </div>
                 </div>
-                <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Scan this code to view your agenda on another device</p>
+                
+                <!-- Timeline View Toggle -->
+                <div class="flex justify-end mb-4">
+                    <div class="inline-flex rounded-md shadow-sm" role="group">
+                        <button id="card-view-btn" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
+                            <i class="fas fa-th-large mr-1"></i> Card View
+                        </button>
+                        <button id="timeline-view-btn" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
+                            <i class="fas fa-stream mr-1"></i> Timeline
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Card View -->
+                <div id="card-view" class="space-y-4">
+                    <!-- Will be populated with JavaScript -->
+                </div>
+                
+                <!-- Timeline View -->
+                <div id="timeline-view" class="timeline-container hidden pb-10">
+                    <div class="timeline-line"></div>
+                    <!-- Will be populated with JavaScript -->
+                </div>
+                
+                <!-- No Meetings Message -->
+                <div id="no-meetings-message" class="hidden text-center py-10">
+                    <div class="inline-block p-6 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <i class="fas fa-calendar-times text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-lg text-gray-500 dark:text-gray-400">No meetings scheduled for you.</p>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div id="personal-agenda" class="hidden">
-            <div class="flex justify-between items-center mb-6">
-                <button id="back-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded transition">
-                    Back
-                </button>
-                <h2 id="attendee-name" class="text-xl font-bold text-primary"></h2>
-            </div>
-            
-            <div id="agenda-container" class="space-y-4">
-                <!-- Will be populated with JavaScript -->
-            </div>
-        </div>
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-gray-500 dark:text-gray-400 text-sm">
+            <p>Development Center &copy; 2025 - <span id="current-year"></span></p>
+            <p class="mt-1">Powered by Sourcing Academy</p>
+        </footer>
     </div>
 
     <script>
         // Check for dark mode preference
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-        }
-        
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            if (event.matches) {
+        function setThemePreference() {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
             }
-        });
+        }
         
-        // Generate today's date for our sample data
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Set theme on load
+        setThemePreference();
         
-        // Sample data - this would come from a server in a real application
-        let attendees = [
-            { id: "1", name: "John Smith", role: "participant" },
-            { id: "2", name: "Jane Doe", role: "participant" },
-            { id: "3", name: "Michael Johnson", role: "observer" },
-            { id: "4", name: "Sarah Williams", role: "observer,roleplayer" },
-            { id: "5", name: "Robert Brown", role: "participant" },
-            { id: "6", name: "Emily Davis", role: "roleplayer" },
-            { id: "7", name: "David Wilson", role: "participant" },
-            { id: "8", name: "Lisa Martinez", role: "observer" },
-            { id: "9", name: "James Taylor", role: "participant" },
-            { id: "10", name: "Patricia Anderson", role: "observer,roleplayer" },
-            // In a real app, there would be around 50 people as specified
-        ];
+        // Update current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
         
-        let meetings = [
-            {
-                id: "m1",
-                title: "Product Strategy",
-                start: `${dateStr}T08:30:00`,
-                end: `${dateStr}T09:30:00`,
-                location: "Room A",
-                participants: ["1", "2", "3", "4"]
-            },
-            {
-                id: "m2",
-                title: "Design Review",
-                start: `${dateStr}T09:45:00`,
-                end: `${dateStr}T10:30:00`,
-                location: "Room B",
-                participants: ["1", "5", "6", "7"]
-            },
-            {
-                id: "m3",
-                title: "Client Presentation",
-                start: `${dateStr}T10:45:00`,
-                end: `${dateStr}T11:45:00`,
-                location: "Conference Hall",
-                participants: ["2", "3", "8", "9"]
-            },
-            {
-                id: "m4",
-                title: "Team Lunch",
-                start: `${dateStr}T12:00:00`,
-                end: `${dateStr}T13:00:00`,
-                location: "Cafeteria",
-                participants: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-            },
-            {
-                id: "m5",
-                title: "Technical Discussion",
-                start: `${dateStr}T13:15:00`,
-                end: `${dateStr}T14:15:00`,
-                location: "Room C",
-                participants: ["1", "3", "5", "10"]
-            },
-            {
-                id: "m6",
-                title: "Project Planning",
-                start: `${dateStr}T14:30:00`,
-                end: `${dateStr}T15:30:00`,
-                location: "Room A",
-                participants: ["2", "4", "6", "8"]
-            },
-            {
-                id: "m7",
-                title: "Budget Review",
-                start: `${dateStr}T15:45:00`,
-                end: `${dateStr}T16:15:00`,
-                location: "Room D",
-                participants: ["1", "5", "9"]
-            },
-            {
-                id: "m8",
-                title: "Marketing Strategy",
-                start: `${dateStr}T16:30:00`,
-                end: `${dateStr}T17:30:00`,
-                location: "Room B",
-                participants: ["2", "7", "10"]
-            },
-            // In a real app, there would be more meetings based on the complex matrix
-        ];
+        // Initialize empty data
+        let attendees = [];
+        let meetings = [];
         
         // DOM elements
+        const loadingContainer = document.getElementById('loading-container');
+        const mainContent = document.getElementById('main-content');
         const welcomeScreen = document.getElementById('welcome-screen');
         const personalAgenda = document.getElementById('personal-agenda');
         const attendeeSelect = document.getElementById('attendee-select');
+        const roleFilter = document.getElementById('role-filter');
         const viewAgendaBtn = document.getElementById('view-agenda-btn');
         const backBtn = document.getElementById('back-btn');
         const attendeeNameDisplay = document.getElementById('attendee-name');
-        const agendaContainer = document.getElementById('agenda-container');
-        const qrContainer = document.getElementById('qr-container');
+        const cardView = document.getElementById('card-view');
+        const timelineView = document.getElementById('timeline-view');
+        const cardViewBtn = document.getElementById('card-view-btn');
+        const timelineViewBtn = document.getElementById('timeline-view-btn');
+        const noMeetingsMessage = document.getElementById('no-meetings-message');
         const errorMessage = document.getElementById('error-message');
+        
+        // Stats elements
+        const totalMeetingsEl = document.getElementById('total-meetings');
+        const todayMeetingsEl = document.getElementById('today-meetings');
+        const nextMeetingEl = document.getElementById('next-meeting');
+        const meetingHoursEl = document.getElementById('meeting-hours');
+        
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        });
+        
+        // View toggle buttons
+        cardViewBtn.addEventListener('click', () => {
+            cardView.classList.remove('hidden');
+            timelineView.classList.add('hidden');
+            cardViewBtn.classList.add('bg-gray-200', 'dark:bg-gray-600');
+            timelineViewBtn.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+        });
+        
+        timelineViewBtn.addEventListener('click', () => {
+            cardView.classList.add('hidden');
+            timelineView.classList.remove('hidden');
+            timelineViewBtn.classList.add('bg-gray-200', 'dark:bg-gray-600');
+            cardViewBtn.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+        });
         
         // Admin panel elements
         const adminToggle = document.getElementById('admin-toggle');
         const adminPanel = document.getElementById('admin-panel');
         const closeAdmin = document.getElementById('close-admin');
+        const closeAdminBtn = document.getElementById('close-admin-btn');
         const attendeesCsvInput = document.getElementById('attendees-csv');
         const meetingsCsvInput = document.getElementById('meetings-csv');
         const downloadAttendeeTemplate = document.getElementById('download-attendee-template');
@@ -283,9 +491,200 @@
         const dataPreview = document.getElementById('data-preview');
         const toggleAttendeesPreview = document.getElementById('toggle-attendees-preview');
         const toggleMeetingsPreview = document.getElementById('toggle-meetings-preview');
+        const refreshDataBtn = document.getElementById('refresh-data-btn');
         
-        // Role filter dropdown element
-        const roleFilter = document.getElementById('role-filter');
+        // Password elements
+        const passwordModal = document.getElementById('password-modal');
+        const adminPassword = document.getElementById('admin-password');
+        const submitPassword = document.getElementById('submit-password');
+        const cancelPassword = document.getElementById('cancel-password');
+        const passwordError = document.getElementById('password-error');
+        const setPasswordCheckbox = document.getElementById('set-password');
+        const newPasswordContainer = document.getElementById('new-password-container');
+        const newPassword = document.getElementById('new-password');
+        const confirmPassword = document.getElementById('confirm-password');
+        const passwordMismatch = document.getElementById('password-mismatch');
+        
+        // Default password
+        const DEFAULT_PASSWORD = "admin123";
+        
+        // Logo elements
+        const logoContainer = document.getElementById('logo-container');
+        const appLogo = document.getElementById('app-logo');
+        const logoImageInput = document.getElementById('logo-image');
+        const removeLogoBtn = document.getElementById('remove-logo');
+        const logoPreview = document.getElementById('logo-preview');
+        const logoPreviewImage = document.getElementById('logo-preview-image');
+        
+        // Fetch data from GitHub-hosted CSV files
+        async function loadData() {
+            try {
+                // Show loading state
+                loadingContainer.classList.remove('hidden');
+                mainContent.classList.add('hidden');
+                
+                // Try to load from GitHub URLs
+                if (GITHUB_ATTENDEES_URL && GITHUB_MEETINGS_URL) {
+                    console.log("Fetching data from GitHub CSV files");
+                    
+                    try {
+                        // Fetch attendees data
+                        const attendeesResponse = await fetch(GITHUB_ATTENDEES_URL);
+                        if (!attendeesResponse.ok) {
+                            throw new Error(`Failed to fetch attendees: ${attendeesResponse.status}`);
+                        }
+                        
+                        const attendeesCsv = await attendeesResponse.text();
+                        console.log("Attendees data received, length:", attendeesCsv.length);
+                        
+                        // Parse attendees CSV
+                        const attendeesResults = Papa.parse(attendeesCsv, { header: true, skipEmptyLines: true });
+                        
+                        // Process attendees data - handle potential different column names
+                        attendees = attendeesResults.data.map(row => ({
+                            id: row.id || row.ID || row["ID"] || "",
+                            name: row.name || row.Name || row["Name"] || "",
+                            role: (row.role || row.Role || row["Role"] || "participant").toLowerCase()
+                        }));
+                        
+                        console.log(`Loaded ${attendees.length} attendees from GitHub`);
+                        
+                        // Fetch meetings data
+                        const meetingsResponse = await fetch(GITHUB_MEETINGS_URL);
+                        if (!meetingsResponse.ok) {
+                            throw new Error(`Failed to fetch meetings: ${meetingsResponse.status}`);
+                        }
+                        
+                        const meetingsCsv = await meetingsResponse.text();
+                        console.log("Meetings data received, length:", meetingsCsv.length);
+                        
+                        // Parse meetings CSV
+                        const meetingsResults = Papa.parse(meetingsCsv, { header: true, skipEmptyLines: true });
+                        
+                        // Process meetings data - handle different column structure
+                        meetings = meetingsResults.data.map(row => {
+                            // Map column names to expected properties
+                            const meetingInfo = {
+                                id: row.id || row.ID || row["Meeting ID"] || "",
+                                title: row.title || row.Title || row["Meeting Title"] || "",
+                                start: row.start || row.Start || row["Start Time"] || "",
+                                end: row.end || row.End || row["End Time"] || "",
+                                location: row.location || row.Location || row["Location"] || "",
+                                participants: []
+                            };
+                            
+                            // Extract attendee IDs from columns
+                            for (const [key, value] of Object.entries(row)) {
+                                // Skip the main meeting info columns
+                                if (["id", "ID", "Meeting ID", "title", "Title", "Meeting Title", 
+                                    "start", "Start", "Start Time", "end", "End", "End Time", 
+                                    "location", "Location"].includes(key)) {
+                                    continue;
+                                }
+                                
+                                // If there's a value and it's not empty, add it as participant ID
+                                if (value && String(value).trim() !== "") {
+                                    meetingInfo.participants.push(String(value).trim());
+                                }
+                            }
+                            
+                            return meetingInfo;
+                        });
+                        
+                        console.log(`Loaded ${meetings.length} meetings from GitHub`);
+                        
+                        // Initialize the app with loaded data
+                        initializeApp();
+                        return;
+                    } catch (error) {
+                        console.error("Error loading data from GitHub:", error);
+                        // Fall back to sample data if there's an error
+                        initializeWithSampleData();
+                    }
+                } else {
+                    console.log("No GitHub URLs configured, using sample data");
+                    initializeWithSampleData();
+                }
+            } catch (error) {
+                console.error("Error in loadData:", error);
+                initializeWithSampleData();
+            }
+        }
+        
+        // Use sample data if GitHub fails
+        function initializeWithSampleData() {
+            console.log("Using sample data");
+            
+            // Generate today's date for our sample data
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+            
+            // Sample attendees data - use your real data if available
+            attendees = [
+                { id: "1", name: "Joanna Konwerska", role: "participant" },
+                { id: "2", name: "Kivilcim Elci", role: "participant" },
+                { id: "3", name: "Magdalena Dudziuk", role: "participant" },
+                { id: "4", name: "Melanie Dehorter", role: "participant" },
+                { id: "5", name: "Joanna Osemlak", role: "participant" },
+                { id: "6", name: "Michelle Wiseman", role: "participant" },
+                { id: "7", name: "Olivia Dole", role: "participant" },
+                { id: "8", name: "Robert Wloch", role: "participant" },
+                { id: "9", name: "Sarah Mambo", role: "participant" },
+                { id: "10", name: "Riadh Dehimat", role: "participant" }
+            ];
+            
+            // Sample meetings data
+            meetings = [
+                {
+                    id: "M1",
+                    title: "Kick Off",
+                    start: `${dateStr}T08:30:00`,
+                    end: `${dateStr}T09:30:00`,
+                    location: "EVRY",
+                    participants: ["1", "2", "3", "4", "5"]
+                },
+                {
+                    id: "M2",
+                    title: "Design Review",
+                    start: `${dateStr}T09:45:00`,
+                    end: `${dateStr}T10:30:00`,
+                    location: "Room B",
+                    participants: ["1", "5", "6", "7"]
+                }
+            ];
+            
+            // Initialize the app with sample data
+            initializeApp();
+        }
+        
+        // Initialize the app with data
+        function initializeApp() {
+            // Hide loading state, show main content
+            loadingContainer.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            
+            // Populate the attendee dropdown
+            populateAttendeeDropdown();
+            
+            // Check if URL has an attendee parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const attendeeId = urlParams.get('attendee');
+            
+            if (attendeeId) {
+                // Check if it's a valid attendee ID
+                const attendeeExists = attendees.some(a => a.id === attendeeId);
+                
+                if (attendeeExists) {
+                    // Set the dropdown to the selected attendee
+                    attendeeSelect.value = attendeeId;
+                    // Show their agenda
+                    showPersonalAgenda();
+                }
+            }
+            
+            // Load saved logo
+            loadSavedLogo();
+        }
         
         // Populate the attendee dropdown based on role filter selection
         function populateAttendeeDropdown() {
@@ -352,29 +751,14 @@
             
             // Clear any previous error messages
             errorMessage.classList.add('hidden');
-            
-            // Clear QR code
-            qrContainer.innerHTML = '<p class="text-gray-500">Select an attendee to generate QR code</p>';
         }
         
         // Role filter change event handler
         roleFilter.addEventListener('change', populateAttendeeDropdown);
         
-        // Initialize dropdown with all attendees
-        populateAttendeeDropdown();
-        
         // Event listeners
-        attendeeSelect.addEventListener('change', updateQRCode);
         viewAgendaBtn.addEventListener('click', showPersonalAgenda);
         backBtn.addEventListener('click', showWelcomeScreen);
-        
-        // Logo elements
-        const logoContainer = document.getElementById('logo-container');
-        const appLogo = document.getElementById('app-logo');
-        const logoImageInput = document.getElementById('logo-image');
-        const removeLogoBtn = document.getElementById('remove-logo');
-        const logoPreview = document.getElementById('logo-preview');
-        const logoPreviewImage = document.getElementById('logo-preview-image');
         
         // Logo handling functions
         function handleLogoUpload(event) {
@@ -397,14 +781,7 @@
                 logoPreviewImage.src = logoData;
                 logoPreview.classList.remove('hidden');
                 
-                // Store logo in localStorage for persistence
-                try {
-                    localStorage.setItem('appLogo', logoData);
-                } catch (e) {
-                    console.log('Could not save logo to localStorage:', e);
-                }
-                
-                // Show logo in app
+                // Show logo in app header only
                 appLogo.src = logoData;
                 logoContainer.classList.remove('hidden');
             };
@@ -420,57 +797,20 @@
             logoPreviewImage.src = '';
             logoPreview.classList.add('hidden');
             
-            // Remove from localStorage
-            try {
-                localStorage.removeItem('appLogo');
-            } catch (e) {
-                console.log('Could not remove logo from localStorage:', e);
-            }
-            
             // Hide logo in app
             appLogo.src = '';
             logoContainer.classList.add('hidden');
         }
         
-        // Load saved logo on page load
+        // Setup the logo for the header (simplified)
         function loadSavedLogo() {
-            try {
-                const savedLogo = localStorage.getItem('appLogo');
-                if (savedLogo) {
-                    // Show logo in app
-                    appLogo.src = savedLogo;
-                    logoContainer.classList.remove('hidden');
-                    
-                    // Show in preview
-                    logoPreviewImage.src = savedLogo;
-                    logoPreview.classList.remove('hidden');
-                }
-            } catch (e) {
-                console.log('Could not load logo from localStorage:', e);
-            }
+            console.log('Logo loading skipped (localStorage unavailable in sandbox)');
+            // No default logo anymore, just using the sun/moon toggle
         }
         
         // Logo event listeners
         logoImageInput.addEventListener('change', handleLogoUpload);
         removeLogoBtn.addEventListener('click', handleRemoveLogo);
-        
-        // Load saved logo on page load
-        loadSavedLogo();
-        
-        // Password elements
-        const passwordModal = document.getElementById('password-modal');
-        const adminPassword = document.getElementById('admin-password');
-        const submitPassword = document.getElementById('submit-password');
-        const cancelPassword = document.getElementById('cancel-password');
-        const passwordError = document.getElementById('password-error');
-        const setPasswordCheckbox = document.getElementById('set-password');
-        const newPasswordContainer = document.getElementById('new-password-container');
-        const newPassword = document.getElementById('new-password');
-        const confirmPassword = document.getElementById('confirm-password');
-        const passwordMismatch = document.getElementById('password-mismatch');
-        
-        // Default password (if none is set)
-        const DEFAULT_PASSWORD = "admin123";
         
         // Password handling functions
         function showPasswordModal() {
@@ -495,13 +835,8 @@
         function validatePassword() {
             const enteredPassword = adminPassword.value;
             
-            // Get stored password or use default
-            let correctPassword;
-            try {
-                correctPassword = localStorage.getItem('adminPassword') || DEFAULT_PASSWORD;
-            } catch (e) {
-                correctPassword = DEFAULT_PASSWORD;
-            }
+            // Use default password since we can't use localStorage
+            const correctPassword = DEFAULT_PASSWORD;
             
             // Check if setting a new password
             if (setPasswordCheckbox.checked) {
@@ -514,14 +849,9 @@
                     return false;
                 }
                 
-                // Save new password if entered
-                if (newPasswordValue) {
-                    try {
-                        localStorage.setItem('adminPassword', newPasswordValue);
-                    } catch (e) {
-                        console.log('Could not save password to localStorage:', e);
-                    }
-                }
+                // In a sandbox environment, we can't save passwords
+                // Just pretend it worked but it won't persist
+                console.log('Note: Password can\'t be saved in this environment');
             }
             
             // Validate current password
@@ -539,6 +869,9 @@
             if (validatePassword()) {
                 hidePasswordModal();
                 adminPanel.classList.remove('hidden');
+                
+                // Load data preview
+                showDataPreview('attendees');
             } else {
                 if (!setPasswordCheckbox.checked || !passwordMismatch.classList.contains('hidden')) {
                     passwordError.classList.remove('hidden');
@@ -567,11 +900,33 @@
             }
         });
         
-        // Admin panel close button
+        // Admin panel event listeners
         closeAdmin.addEventListener('click', () => {
             adminPanel.classList.add('hidden');
         });
         
+        closeAdminBtn.addEventListener('click', () => {
+            adminPanel.classList.add('hidden');
+        });
+        
+        refreshDataBtn.addEventListener('click', async () => {
+            dataPreview.innerHTML = '<p class="text-blue-500"><i class="fas fa-spinner fa-spin mr-1"></i> Refreshing data from GitHub...</p>';
+            await loadData();
+            dataPreview.innerHTML = '<p class="text-green-500">✓ Data refreshed successfully from GitHub.</p>';
+            showDataPreview('attendees');
+        });
+        
+        // Toggle CSV import options
+        const toggleCsvImport = document.getElementById('toggle-csv-import');
+        const csvImportContainer = document.getElementById('csv-import-container');
+        
+        toggleCsvImport.addEventListener('click', () => {
+            csvImportContainer.classList.toggle('hidden');
+            toggleCsvImport.textContent = csvImportContainer.classList.contains('hidden') ? 
+                'Show CSV Import Options' : 'Hide CSV Import Options';
+        });
+        
+        // Data import event listeners
         attendeesCsvInput.addEventListener('change', handleAttendeesCsvUpload);
         meetingsCsvInput.addEventListener('change', handleMeetingsCsvUpload);
         
@@ -581,375 +936,27 @@
         toggleAttendeesPreview.addEventListener('click', () => showDataPreview('attendees'));
         toggleMeetingsPreview.addEventListener('click', () => showDataPreview('meetings'));
         
-        // Admin secret access - keyboard shortcut (Ctrl+Shift+A)
-        const adminToggleContainer = document.getElementById('admin-toggle-container');
-        
-        document.addEventListener('keydown', function(event) {
-            // Check for Ctrl+Shift+A keyboard shortcut
-            if (event.ctrlKey && event.shiftKey && event.key === 'A') {
-                // Toggle admin panel visibility
-                adminToggleContainer.classList.toggle('hidden');
-                
-                // If showing, focus the admin toggle button
-                if (!adminToggleContainer.classList.contains('hidden')) {
-                    adminToggle.focus();
-                }
-            }
-        });
-        
-        // Check for admin mode in URL
-        function checkAdminMode() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const isAdmin = urlParams.get('admin') === 'true';
-            
-            if (isAdmin) {
-                adminToggleContainer.classList.remove('hidden');
-            }
-        }
-        
-        // Check if URL has an attendee parameter
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const attendeeId = urlParams.get('attendee');
-            
-            // Check for admin mode
-            checkAdminMode();
-            
-            if (attendeeId) {
-                // Check if it's a valid attendee ID
-                const attendeeExists = attendees.some(a => a.id === attendeeId);
-                
-                if (attendeeExists) {
-                    // Set the dropdown to the selected attendee
-                    attendeeSelect.value = attendeeId;
-                    // Update QR code
-                    updateQRCode();
-                    // Show their agenda
-                    showPersonalAgenda();
-                }
-            }
-        });
-        
-        function updateQRCode() {
-            const selectedAttendeeId = attendeeSelect.value;
-            
-            if (selectedAttendeeId) {
-                // Clear previous QR code
-                qrContainer.innerHTML = '';
-                
-                // Generate URL for the selected attendee
-                const currentUrl = new URL(window.location.href);
-                currentUrl.searchParams.set('attendee', selectedAttendeeId);
-                
-                // Generate QR code
-                new QRCode(qrContainer, {
-                    text: currentUrl.toString(),
-                    width: 128,
-                    height: 128,
-                    colorDark: "#5D5CDE",
-                    colorLight: document.documentElement.classList.contains('dark') ? "#2D3748" : "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            } else {
-                qrContainer.innerHTML = '<p class="text-gray-500">Select an attendee to generate QR code</p>';
-            }
-        }
-        
-        function showPersonalAgenda() {
-            const selectedAttendeeId = attendeeSelect.value;
-            
-            if (!selectedAttendeeId) {
-                errorMessage.textContent = 'Please select an attendee';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-            
-            errorMessage.classList.add('hidden');
-            
-            const selectedAttendee = attendees.find(a => a.id === selectedAttendeeId);
-            
-            // Create role badges for the attendee
-            let roleBadges = '';
-            if (selectedAttendee.role) {
-                roleBadges = selectedAttendee.role.split(',').map(role => {
-                    let badgeClass = "";
-                    switch(role.trim()) {
-                        case "participant":
-                            badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
-                            break;
-                        case "observer":
-                            badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
-                            break;
-                        case "roleplayer":
-                            badgeClass = "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200";
-                            break;
-                        default:
-                            badgeClass = "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
-                    }
-                    return `<span class="inline-block px-2 py-0.5 rounded-full text-xs ${badgeClass} ml-2">${role.trim()}</span>`;
-                }).join('');
-            }
-            
-            // Show name and role badges
-            attendeeNameDisplay.innerHTML = `${selectedAttendee.name}'s Agenda ${roleBadges}`;
-            
-            // Filter meetings for the selected attendee
-            const attendeeMeetings = meetings.filter(meeting => 
-                meeting.participants.includes(selectedAttendeeId)
-            ).sort((a, b) => new Date(a.start) - new Date(b.start));
-            
-            // Clear previous agenda
-            agendaContainer.innerHTML = '';
-            
-            // Display meetings
-            if (attendeeMeetings.length === 0) {
-                agendaContainer.innerHTML = '<p class="text-center py-4">No meetings scheduled for this attendee.</p>';
-            } else {
-                attendeeMeetings.forEach(meeting => {
-                    const startTime = new Date(meeting.start);
-                    const endTime = new Date(meeting.end);
-                    const durationMs = endTime - startTime;
-                    const durationMinutes = Math.round(durationMs / 60000);
-                    
-                    // Get other participants' names and roles
-                    const otherParticipants = meeting.participants
-                        .filter(id => id !== selectedAttendeeId)
-                        .map(id => {
-                            const attendee = attendees.find(a => a.id === id);
-                            return attendee || { id, name: 'Unknown', role: '' };
-                        });
-                    
-                    const meetingElement = document.createElement('div');
-                    meetingElement.className = 'p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-primary';
-                    meetingElement.innerHTML = `
-                        <div class="flex flex-wrap justify-between items-start gap-2">
-                            <h3 class="font-bold text-lg">${meeting.title}</h3>
-                            <span class="bg-primary/10 text-primary px-2 py-1 rounded text-sm whitespace-nowrap">${durationMinutes} min</span>
-                        </div>
-                        <div class="mt-2 text-gray-600 dark:text-gray-400">
-                            <p class="flex items-center">
-                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="font-medium">${startTime.toLocaleDateString()}</span>
-                                <span class="mx-2">•</span>
-                                <span class="whitespace-nowrap">${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-                                ${endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            </p>
-                            <p class="flex items-center mt-1">
-                                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                </svg>
-                                ${meeting.location}
-                            </p>
-                            <div class="mt-3">
-                                <p class="text-sm font-medium mb-1">Meeting with:</p>
-                                <div class="flex flex-wrap gap-2">
-                                    ${(() => {
-                                        // Check if this meeting includes exactly all attendees
-                                        const meetingParticipantCount = meeting.participants.length;
-                                        const totalAttendeeCount = attendees.length;
-                                        
-                                        // Only show "All participants" if exactly 100% of attendees are included
-                                        if (meetingParticipantCount === totalAttendeeCount) {
-                                            return `<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
-                                                All participants (${meetingParticipantCount} people)
-                                            </span>`;
-                                        }
-                                        
-                                        // If meeting has more than 15 other participants, summarize by roles
-                                        else if (otherParticipants.length > 15) {
-                                            // Count by role
-                                            const roleCounts = {
-                                                participant: 0,
-                                                observer: 0,
-                                                roleplayer: 0
-                                            };
-                                            
-                                            otherParticipants.forEach(attendee => {
-                                                if (!attendee.role) {
-                                                    roleCounts.participant++;
-                                                    return;
-                                                }
-                                                
-                                                const roles = attendee.role.split(',').map(r => r.trim());
-                                                if (roles.includes('participant')) roleCounts.participant++;
-                                                if (roles.includes('observer')) roleCounts.observer++;
-                                                if (roles.includes('roleplayer')) roleCounts.roleplayer++;
-                                            });
-                                            
-                                            // Create summary badges
-                                            let badges = '';
-                                            if (roleCounts.participant > 0) {
-                                                badges += `<span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-medium">
-                                                    ${roleCounts.participant} Participants
-                                                </span>`;
-                                            }
-                                            if (roleCounts.observer > 0) {
-                                                badges += `<span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium">
-                                                    ${roleCounts.observer} Observers
-                                                </span>`;
-                                            }
-                                            if (roleCounts.roleplayer > 0) {
-                                                badges += `<span class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-xs font-medium">
-                                                    ${roleCounts.roleplayer} Role Players
-                                                </span>`;
-                                            }
-                                            
-                                            return badges;
-                                        }
-                                        
-                                        // Otherwise, show individual participants grouped by role
-                                        else {
-                                            // Separate attendees by role
-                                            const participants = [];
-                                            const observers = [];
-                                            const rolePlayers = [];
-                                            const others = [];
-                                            
-                                            otherParticipants.forEach(attendee => {
-                                                // Set badge color based on role
-                                                let badgeClass = "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
-                                                let roleType = "other";
-                                                
-                                                if (attendee.role) {
-                                                    const roleLower = attendee.role.toLowerCase();
-                                                    const roles = roleLower.split(/[,;]+/).map(r => r.trim());
-                                                    
-                                                    // Determine primary role for sorting
-                                                    if (roles.includes('participant') || roleLower.includes('part')) {
-                                                        badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
-                                                        roleType = "participant";
-                                                    } else if (roles.includes('observer') || roleLower.includes('observ')) {
-                                                        badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
-                                                        roleType = "observer";
-                                                    } else if (roles.includes('roleplayer') || roles.includes('role player') || 
-                                                              roleLower.includes('role')) {
-                                                        badgeClass = "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200";
-                                                        roleType = "roleplayer";
-                                                    }
-                                                } else {
-                                                    // Default to participant if no role specified
-                                                    badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
-                                                    roleType = "participant";
-                                                }
-                                                
-                                                const attendeeHtml = `<span class="${badgeClass} px-2 py-1 rounded-full text-xs flex items-center">
-                                                    ${attendee.name}
-                                                </span>`;
-                                                
-                                                // Add to appropriate group
-                                                if (roleType === "participant") {
-                                                    participants.push(attendeeHtml);
-                                                } else if (roleType === "observer") {
-                                                    observers.push(attendeeHtml);
-                                                } else if (roleType === "roleplayer") {
-                                                    rolePlayers.push(attendeeHtml);
-                                                } else {
-                                                    others.push(attendeeHtml);
-                                                }
-                                            });
-                                            
-                                            // Construct the HTML with role groups on separate lines
-                                            let html = '';
-                                            
-                                            // Participants first (if any)
-                                            if (participants.length > 0) {
-                                                html += `<div class="mb-3">
-                                                    <div class="font-medium text-xs text-gray-500 mb-1">Participants:</div>
-                                                    <div class="flex flex-wrap gap-2">
-                                                        ${participants.join('')}
-                                                    </div>
-                                                </div>`;
-                                            }
-                                            
-                                            // Observers second (if any)
-                                            if (observers.length > 0) {
-                                                html += `<div class="mb-3">
-                                                    <div class="font-medium text-xs text-gray-500 mb-1">Observers:</div>
-                                                    <div class="flex flex-wrap gap-2">
-                                                        ${observers.join('')}
-                                                    </div>
-                                                </div>`;
-                                            }
-                                            
-                                            // Role players third (if any)
-                                            if (rolePlayers.length > 0) {
-                                                html += `<div class="flex flex-wrap gap-2 mb-2">
-                                                    ${rolePlayers.join('')}
-                                                </div>`;
-                                            }
-                                            
-                                            // Others last (if any)
-                                            if (others.length > 0) {
-                                                html += `<div class="flex flex-wrap gap-2">
-                                                    ${others.join('')}
-                                                </div>`;
-                                            }
-                                            
-                                            return html;
-                                        }
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    agendaContainer.appendChild(meetingElement);
-                });
-            }
-            
-            // Show agenda screen, hide welcome screen
-            welcomeScreen.classList.add('hidden');
-            personalAgenda.classList.remove('hidden');
-        }
-        
-        function showWelcomeScreen() {
-            personalAgenda.classList.add('hidden');
-            welcomeScreen.classList.remove('hidden');
-        }
-        
-        // Initialize QR code display
-        updateQRCode();
-        
-        // CSV Import Functions
-        
         // Handle attendees CSV upload
         function handleAttendeesCsvUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
             Papa.parse(file, {
-                header: false,
+                header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
                     try {
                         const newAttendees = [];
                         
                         // Process each row
-                        results.data.forEach((row, index) => {
-                            // Skip header row if present
-                            if (index === 0 && row[0].toLowerCase() === 'id') return;
-                            
-                            if (row.length >= 2) {
+                        results.data.forEach(row => {
+                            if (row.id || row.ID || row.name || row.Name) {
                                 // Add attendee with basic info
                                 const attendee = {
-                                    id: row[0].toString(),
-                                    name: row[1]
+                                    id: (row.id || row.ID || "").toString(),
+                                    name: row.name || row.Name || "",
+                                    role: (row.role || row.Role || "participant").toLowerCase()
                                 };
-                                
-                                // Check if role column exists (3rd column)
-                                if (row.length >= 3 && row[2]) {
-                                    // Store the role, normalizing to lowercase
-                                    attendee.role = row[2].toLowerCase();
-                                } else {
-                                    // Default role
-                                    attendee.role = "participant";
-                                }
-                                
-                                // Log the attendee for debugging
-                                console.log("Imported attendee:", attendee);
                                 
                                 newAttendees.push(attendee);
                             }
@@ -982,34 +989,39 @@
             if (!file) return;
             
             Papa.parse(file, {
-                header: false,
+                header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
                     try {
                         const newMeetings = [];
                         
                         // Process each row
-                        results.data.forEach((row, index) => {
-                            // Skip header row if present
-                            if (index === 0 && row[0].toLowerCase() === 'id') return;
-                            
-                            if (row.length >= 6) {
-                                // Extract the first 5 columns as basic meeting info
+                        results.data.forEach(row => {
+                            if ((row.id || row.ID || row["Meeting ID"]) && 
+                                (row.title || row.Title || row["Meeting Title"]) && 
+                                (row.start || row.Start || row["Start Time"]) && 
+                                (row.end || row.End || row["End Time"])) {
+                                
+                                // Create meeting info object
                                 const meetingInfo = {
-                                    id: row[0].toString(),
-                                    title: row[1],
-                                    start: row[2],
-                                    end: row[3],
-                                    location: row[4],
+                                    id: (row.id || row.ID || row["Meeting ID"] || "").toString(),
+                                    title: row.title || row.Title || row["Meeting Title"] || "",
+                                    start: row.start || row.Start || row["Start Time"] || "",
+                                    end: row.end || row.End || row["End Time"] || "",
+                                    location: row.location || row.Location || row["Location"] || "",
                                     participants: []
                                 };
                                 
-                                // All remaining columns are participant IDs
-                                for (let i = 5; i < row.length; i++) {
-                                    if (row[i] && row[i].trim() !== '') {
-                                        meetingInfo.participants.push(row[i].toString());
+                                // Extract participant IDs from any remaining columns
+                                Object.keys(row).forEach(key => {
+                                    if (!["id", "ID", "Meeting ID", "title", "Title", "Meeting Title", 
+                                        "start", "Start", "Start Time", "end", "End", "End Time", 
+                                        "location", "Location"].includes(key) && 
+                                        row[key] && row[key].trim() !== "") {
+                                        
+                                        meetingInfo.participants.push(row[key].toString());
                                     }
-                                }
+                                });
                                 
                                 newMeetings.push(meetingInfo);
                             }
@@ -1048,9 +1060,8 @@
         
         // Download attendees CSV template
         function downloadAttendeesCsvTemplate() {
-            // Create sample data with roles
             const csvData = [
-                ['id', 'name', 'role'],
+                ['ID', 'Name', 'Role'],
                 ['1', 'John Smith', 'participant'],
                 ['2', 'Jane Doe', 'participant'],
                 ['3', 'Michael Johnson', 'observer'],
@@ -1064,12 +1075,11 @@
         
         // Download meetings CSV template
         function downloadMeetingsCsvTemplate() {
-            // Create sample data with ISO format dates
             const dateStr = new Date().toISOString().split('T')[0];
             const csvData = [
-                ['id', 'title', 'start', 'end', 'location', 'participant1', 'participant2', 'participant3', 'participant4'],
-                ['m1', 'Product Strategy', `${dateStr}T09:00:00`, `${dateStr}T10:00:00`, 'Room A', '1', '2', '3', '4'],
-                ['m2', 'Design Review', `${dateStr}T10:30:00`, `${dateStr}T11:30:00`, 'Room B', '1', '5', '6', '7']
+                ['ID', 'Title', 'Start', 'End', 'Location', '1', '2', '3', '4'],
+                ['M1', 'Product Strategy', `${dateStr}T09:00:00`, `${dateStr}T10:00:00`, 'Room A', '1', '2', '3', '4'],
+                ['M2', 'Design Review', `${dateStr}T10:30:00`, `${dateStr}T11:30:00`, 'Room B', '1', '5', '', '']
             ];
             
             const csvContent = generateCsv(csvData);
@@ -1078,24 +1088,13 @@
         
         // Generic function to trigger CSV download
         function downloadCsv(csvContent, filename) {
-            // Create a blob with the CSV data
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            
-            // Create a temporary link element
             const link = document.createElement('a');
-            
-            // Set link attributes
             link.setAttribute('href', URL.createObjectURL(blob));
             link.setAttribute('download', filename);
             link.style.visibility = 'hidden';
-            
-            // Add to the DOM
             document.body.appendChild(link);
-            
-            // Trigger download
             link.click();
-            
-            // Clean up
             document.body.removeChild(link);
         }
         
@@ -1107,9 +1106,9 @@
                     return;
                 }
                 
-                let html = '<div class="font-medium mb-1">Attendees Preview:</div>';
-                html += '<table class="w-full border-collapse">';
-                html += '<thead><tr><th class="text-left pr-4">ID</th><th class="text-left pr-4">Name</th><th class="text-left">Role</th></tr></thead>';
+                let html = '<div class="font-medium mb-2">Attendees Preview:</div>';
+                html += '<table class="w-full">';
+                html += '<thead><tr><th class="text-left">ID</th><th class="text-left">Name</th><th class="text-left">Role</th></tr></thead>';
                 html += '<tbody>';
                 
                 // Show up to 10 attendees in preview
@@ -1134,12 +1133,12 @@
                             default:
                                 badgeClass = "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
                         }
-                        return `<span class="inline-block px-2 py-0.5 rounded-full text-xs ${badgeClass}">${role.trim()}</span>`;
+                        return `<span class="inline-block px-1 py-0.5 rounded-full text-xs ${badgeClass}">${role.trim()}</span>`;
                     }).join(' ');
                     
                     html += `<tr>
-                        <td class="pr-4">${attendee.id}</td>
-                        <td class="pr-4">${attendee.name}</td>
+                        <td>${attendee.id}</td>
+                        <td>${attendee.name}</td>
                         <td>${roleBadges}</td>
                     </tr>`;
                 });
@@ -1147,7 +1146,7 @@
                 html += '</tbody></table>';
                 
                 if (attendees.length > 10) {
-                    html += `<p class="text-gray-500 mt-1">...and ${attendees.length - 10} more attendees</p>`;
+                    html += `<p class="text-gray-500 mt-1 text-xs">...and ${attendees.length - 10} more attendees</p>`;
                 }
                 
                 dataPreview.innerHTML = html;
@@ -1157,9 +1156,9 @@
                     return;
                 }
                 
-                let html = '<div class="font-medium mb-1">Meetings Preview:</div>';
-                html += '<table class="w-full border-collapse">';
-                html += '<thead><tr><th class="text-left pr-2">ID</th><th class="text-left pr-2">Title</th><th class="text-left pr-2">Time</th><th class="text-left">Participants</th></tr></thead>';
+                let html = '<div class="font-medium mb-2">Meetings Preview:</div>';
+                html += '<table class="w-full">';
+                html += '<thead><tr><th class="text-left">ID</th><th class="text-left">Title</th><th class="text-left">Time</th><th class="text-left">Participants</th></tr></thead>';
                 html += '<tbody>';
                 
                 // Show up to 5 meetings in preview
@@ -1170,9 +1169,9 @@
                     const timeStr = `${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
                     
                     html += `<tr>
-                        <td class="pr-2">${meeting.id}</td>
-                        <td class="pr-2">${meeting.title}</td>
-                        <td class="pr-2">${timeStr}</td>
+                        <td>${meeting.id}</td>
+                        <td>${meeting.title}</td>
+                        <td>${timeStr}</td>
                         <td>${meeting.participants.length} people</td>
                     </tr>`;
                 });
@@ -1180,12 +1179,378 @@
                 html += '</tbody></table>';
                 
                 if (meetings.length > 5) {
-                    html += `<p class="text-gray-500 mt-1">...and ${meetings.length - 5} more meetings</p>`;
+                    html += `<p class="text-gray-500 mt-1 text-xs">...and ${meetings.length - 5} more meetings</p>`;
                 }
                 
                 dataPreview.innerHTML = html;
             }
         }
+        
+        // Show personal agenda for selected attendee
+        function showPersonalAgenda() {
+            const selectedAttendeeId = attendeeSelect.value;
+            
+            if (!selectedAttendeeId) {
+                errorMessage.textContent = 'Please select an attendee';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            errorMessage.classList.add('hidden');
+            
+            const selectedAttendee = attendees.find(a => a.id === selectedAttendeeId);
+            
+            if (!selectedAttendee) {
+                errorMessage.textContent = 'Selected attendee not found';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            // Create role badges for the attendee
+            let roleBadges = '';
+            if (selectedAttendee.role) {
+                roleBadges = selectedAttendee.role.split(',').map(role => {
+                    let badgeClass = "";
+                    switch(role.trim()) {
+                        case "participant":
+                            badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+                            break;
+                        case "observer":
+                            badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+                            break;
+                        case "roleplayer":
+                            badgeClass = "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200";
+                            break;
+                        default:
+                            badgeClass = "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+                    }
+                    return `<span class="inline-block px-2 py-0.5 rounded-full text-xs ${badgeClass} ml-2">${role.trim()}</span>`;
+                }).join('');
+            }
+            
+            // Show name and role badges
+            attendeeNameDisplay.innerHTML = `${selectedAttendee.name}'s Agenda ${roleBadges}`;
+            
+            // Filter meetings for the selected attendee
+            const attendeeMeetings = meetings.filter(meeting => 
+                meeting.participants.includes(selectedAttendeeId)
+            ).sort((a, b) => new Date(a.start) - new Date(b.start));
+            
+            // Calculate stats
+            updateAgendaStats(selectedAttendeeId, attendeeMeetings);
+            
+            // Clear previous agenda
+            cardView.innerHTML = '';
+            timelineView.innerHTML = '';
+            
+            // Display meetings
+            if (attendeeMeetings.length === 0) {
+                cardView.classList.add('hidden');
+                timelineView.classList.add('hidden');
+                noMeetingsMessage.classList.remove('hidden');
+            } else {
+                noMeetingsMessage.classList.add('hidden');
+                cardView.classList.remove('hidden');
+                
+                // Display meetings in both views
+                renderCardView(selectedAttendeeId, attendeeMeetings);
+                renderTimelineView(selectedAttendeeId, attendeeMeetings);
+            }
+            
+            // Show agenda screen, hide welcome screen
+            welcomeScreen.classList.add('hidden');
+            personalAgenda.classList.remove('hidden');
+        }
+        
+        // Render card view of meetings
+        function renderCardView(selectedAttendeeId, attendeeMeetings) {
+            attendeeMeetings.forEach(meeting => {
+                const startTime = new Date(meeting.start);
+                const endTime = new Date(meeting.end);
+                const durationMs = endTime - startTime;
+                const durationMinutes = Math.round(durationMs / 60000);
+                
+                // Get other participants' names and roles
+                const otherParticipants = meeting.participants
+                    .filter(id => id !== selectedAttendeeId)
+                    .map(id => {
+                        const attendee = attendees.find(a => a.id === id);
+                        return attendee || { id, name: 'Unknown', role: '' };
+                    });
+                
+                // Check if meeting is happening now
+                const now = new Date();
+                const isActive = now >= startTime && now <= endTime;
+                
+                const meetingElement = document.createElement('div');
+                meetingElement.className = `p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 ${isActive ? 'border-green-500' : 'border-primary'} card-hover`;
+                
+                const meetingTime = startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' - ' + 
+                                   endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                meetingElement.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-start gap-2">
+                        <h3 class="font-bold text-lg ${isActive ? 'text-green-600 dark:text-green-400' : ''}">
+                            ${isActive ? '<i class="fas fa-circle-dot text-green-500 animate-pulse mr-1"></i>' : ''}
+                            ${meeting.title}
+                        </h3>
+                        <span class="bg-primary/10 text-primary px-2 py-1 rounded text-sm whitespace-nowrap">${durationMinutes} min</span>
+                    </div>
+                    <div class="mt-2 text-gray-600 dark:text-gray-400">
+                        <p class="flex items-center">
+                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="font-medium">${startTime.toLocaleDateString()}</span>
+                            <span class="mx-2">•</span>
+                            <span class="whitespace-nowrap">${meetingTime}</span>
+                        </p>
+                        <p class="flex items-center mt-1">
+                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            ${meeting.location}
+                        </p>
+                    </div>
+                `;
+                
+                // Add participant information
+                if (otherParticipants.length > 0) {
+                    // Create a container for the participants
+                    const participantsContainer = document.createElement('div');
+                    participantsContainer.className = 'mt-3';
+                    participantsContainer.innerHTML = `
+                        <p class="text-sm font-medium mb-1 text-gray-600 dark:text-gray-400">Meeting with:</p>
+                        <div class="flex flex-wrap gap-2"></div>
+                    `;
+                    
+                    const badgesContainer = participantsContainer.querySelector('div');
+                    
+                    // Check if this meeting includes exactly all attendees
+                    const meetingParticipantCount = meeting.participants.length;
+                    const totalAttendeeCount = attendees.length;
+                    
+                    // Only show "All participants" if exactly 100% of attendees are included
+                    if (meetingParticipantCount === totalAttendeeCount) {
+                        badgesContainer.innerHTML = `
+                            <span class="badge bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
+                                All participants (${meetingParticipantCount} people)
+                            </span>
+                        `;
+                    }
+                    // If meeting has more than 15 other participants, summarize by roles
+                    else if (otherParticipants.length > 15) {
+                        // Count by role
+                        const roleCounts = {
+                            participant: 0,
+                            observer: 0,
+                            roleplayer: 0
+                        };
+                        
+                        otherParticipants.forEach(attendee => {
+                            if (!attendee.role) {
+                                roleCounts.participant++;
+                                return;
+                            }
+                            
+                            const roles = attendee.role.split(',').map(r => r.trim());
+                            if (roles.includes('participant')) roleCounts.participant++;
+                            if (roles.includes('observer')) roleCounts.observer++;
+                            if (roles.includes('roleplayer')) roleCounts.roleplayer++;
+                        });
+                        
+                        // Create summary badges
+                        if (roleCounts.participant > 0) {
+                            badgesContainer.innerHTML += `
+                                <span class="badge bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-medium">
+                                    ${roleCounts.participant} Participants
+                                </span>
+                            `;
+                        }
+                        if (roleCounts.observer > 0) {
+                            badgesContainer.innerHTML += `
+                                <span class="badge bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium">
+                                    ${roleCounts.observer} Observers
+                                </span>
+                            `;
+                        }
+                        if (roleCounts.roleplayer > 0) {
+                            badgesContainer.innerHTML += `
+                                <span class="badge bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-xs font-medium">
+                                    ${roleCounts.roleplayer} Role Players
+                                </span>
+                            `;
+                        }
+                    }
+                    // Otherwise, show individual participants
+                    else {
+                        otherParticipants.forEach(attendee => {
+                            // Set badge color based on role
+                            let badgeClass = "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+                            
+                            if (attendee.role) {
+                                const roleLower = attendee.role.toLowerCase();
+                                if (roleLower.includes('participant')) {
+                                    badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+                                } else if (roleLower.includes('observer')) {
+                                    badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+                                } else if (roleLower.includes('roleplayer') || roleLower.includes('role player')) {
+                                    badgeClass = "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200";
+                                }
+                            }
+                            
+                            const badge = document.createElement('span');
+                            badge.className = `badge ${badgeClass} px-2 py-1 rounded-full text-xs font-medium`;
+                            badge.textContent = attendee.name;
+                            badgesContainer.appendChild(badge);
+                        });
+                    }
+                    
+                    meetingElement.appendChild(participantsContainer);
+                }
+                
+                cardView.appendChild(meetingElement);
+            });
+        }
+        
+        // Render timeline view of meetings
+        function renderTimelineView(selectedAttendeeId, attendeeMeetings) {
+            attendeeMeetings.forEach((meeting, index) => {
+                const startTime = new Date(meeting.start);
+                const endTime = new Date(meeting.end);
+                const durationMs = endTime - startTime;
+                const durationMinutes = Math.round(durationMs / 60000);
+                
+                // Check if meeting is happening now
+                const now = new Date();
+                const isActive = now >= startTime && now <= endTime;
+                
+                const meetingElement = document.createElement('div');
+                meetingElement.className = 'timeline-item pl-12 pb-8 relative';
+                
+                // Add the timeline dot
+                const dot = document.createElement('div');
+                dot.className = `timeline-dot ${isActive ? 'bg-green-500' : ''}`;
+                if (isActive) {
+                    dot.style.width = '12px';
+                    dot.style.height = '12px';
+                    dot.style.left = '19px';
+                }
+                meetingElement.appendChild(dot);
+                
+                const meetingTime = startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' - ' + 
+                                   endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                const meetingCard = document.createElement('div');
+                meetingCard.className = `bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 ${isActive ? 'border-l-4 border-green-500' : ''} card-hover`;
+                meetingCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-base ${isActive ? 'text-green-600 dark:text-green-400' : ''}">
+                                ${meeting.title}
+                            </h3>
+                            <div class="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-clock mr-1"></i>
+                                ${meetingTime} <span class="mx-2">•</span> ${durationMinutes} min
+                            </div>
+                            <div class="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                ${meeting.location}
+                            </div>
+                        </div>
+                        ${isActive ? '<span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded">Now</span>' : ''}
+                    </div>
+                `;
+                
+                // Add participant count
+                const otherParticipants = meeting.participants
+                    .filter(id => id !== selectedAttendeeId)
+                    .map(id => {
+                        const attendee = attendees.find(a => a.id === id);
+                        return attendee || { id, name: 'Unknown', role: '' };
+                    });
+                
+                if (otherParticipants.length > 0) {
+                    const participantInfo = document.createElement('div');
+                    participantInfo.className = 'mt-2 text-sm';
+                    participantInfo.innerHTML = `
+                        <span class="text-gray-500">With ${otherParticipants.length} other ${otherParticipants.length === 1 ? 'person' : 'people'}</span>
+                    `;
+                    meetingCard.appendChild(participantInfo);
+                }
+                
+                meetingElement.appendChild(meetingCard);
+                timelineView.appendChild(meetingElement);
+            });
+        }
+        
+        // Update agenda statistics
+        function updateAgendaStats(selectedAttendeeId, attendeeMeetings) {
+            // Total meetings
+            totalMeetingsEl.textContent = attendeeMeetings.length;
+            
+            // Today's meetings
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const todayMeetings = attendeeMeetings.filter(meeting => {
+                const meetingDate = new Date(meeting.start);
+                return meetingDate >= today && meetingDate < tomorrow;
+            });
+            
+            todayMeetingsEl.textContent = todayMeetings.length;
+            
+            // Next meeting
+            const now = new Date();
+            const upcomingMeetings = attendeeMeetings.filter(meeting => new Date(meeting.start) > now);
+            
+            if (upcomingMeetings.length > 0) {
+                upcomingMeetings.sort((a, b) => new Date(a.start) - new Date(b.start));
+                const nextMeeting = upcomingMeetings[0];
+                const nextStartTime = new Date(nextMeeting.start);
+                nextMeetingEl.textContent = nextStartTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else {
+                nextMeetingEl.textContent = "None";
+            }
+            
+            // Total hours
+            let totalMinutes = 0;
+            attendeeMeetings.forEach(meeting => {
+                const start = new Date(meeting.start);
+                const end = new Date(meeting.end);
+                const durationMs = end - start;
+                totalMinutes += Math.round(durationMs / 60000);
+            });
+            
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            
+            if (hours > 0) {
+                meetingHoursEl.textContent = `${hours}h ${minutes > 0 ? minutes + 'm' : ''}`;
+            } else {
+                meetingHoursEl.textContent = `${minutes}m`;
+            }
+        }
+        
+        function showWelcomeScreen() {
+            personalAgenda.classList.add('hidden');
+            welcomeScreen.classList.remove('hidden');
+        }
+        
+        // Admin secret access - keyboard shortcut (Ctrl+Shift+A)
+        document.addEventListener('keydown', function(event) {
+            // Check for Ctrl+Shift+A keyboard shortcut
+            if (event.ctrlKey && event.shiftKey && event.key === 'A') {
+                // Toggle admin panel visibility
+                adminToggle.click();
+            }
+        });
+        
+        // Initialize data loading
+        loadData();
     </script>
 </body>
 </html>
