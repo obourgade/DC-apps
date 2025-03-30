@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Development Center - Enhanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Add QR code library for badge generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- QR code library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -124,19 +125,18 @@
             background-color: #EF4444;
         }
         
-        /* Badge Generator Styles - A4 quarter size */
+        /* Badge Styles */
         .badge-card {
             width: 105mm;
-            height: 148.5mm;  /* A4 divided by 4 (2x2 layout) */
+            height: 148.5mm;
             border: 1px solid #ddd;
             border-radius: 10px;
             overflow: hidden;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             background-color: white;
-            page-break-inside: avoid;
-            margin: 10px;
             display: inline-block;
+            margin: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            page-break-inside: avoid;
         }
         
         .badge-header {
@@ -144,22 +144,22 @@
             color: white;
             padding: 15px;
             text-align: center;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .badge-content {
             padding: 20px;
+            text-align: center;
+            height: calc(100% - 110px);
             display: flex;
             flex-direction: column;
+            justify-content: center;
             align-items: center;
-            height: calc(100% - 140px);
-        }
-        
-        .badge-info {
-            width: 100%;
-            text-align: center;
-            margin-bottom: 20px;
         }
         
         .badge-name {
@@ -177,43 +177,19 @@
         .badge-qr {
             width: 180px;
             height: 180px;
-            margin: 0 auto;
+            margin: 0 auto 15px auto;
         }
         
         .badge-footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            padding: 10px;
-            font-size: 14px;
+            background-color: #f8f8f8;
             color: #666;
-            background-color: #f9f9f9;
-        }
-        
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            
-            #badge-print-container, #badge-print-container * {
-                visibility: visible;
-            }
-            
-            #badge-print-container {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            
-            .badge-card {
-                page-break-inside: avoid;
-                break-inside: avoid;
-                margin: 0;
-                box-shadow: none;
-            }
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -553,7 +529,7 @@
     </div>
 
     <script>
-        // Check for maintenance mode first
+        // Maintenance mode check
         if (MAINTENANCE_MODE) {
             document.body.innerHTML = `
                 <div class="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100 dark:bg-gray-900">
@@ -569,7 +545,6 @@
                     </div>
                 </div>
             `;
-            // Stop the rest of the app from loading
         }
     
         // Check for dark mode preference
@@ -590,6 +565,7 @@
         // Initialize empty data
         let attendees = [];
         let meetings = [];
+        let badgeData = new Map(); // Store QR code data
         
         // DOM elements
         const loadingContainer = document.getElementById('loading-container');
@@ -981,8 +957,111 @@
             });
         }
         
+        // Generate a QR code as a data URL
+        async function generateQRCodeDataURL(text) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Create a QR code data URL
+                    QRCode.toDataURL(text, {
+                        width: 200,
+                        margin: 1,
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    }, (err, url) => {
+                        if (err) {
+                            console.error("Error generating QR code:", err);
+                            reject(err);
+                        } else {
+                            resolve(url);
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error in QRCode.toDataURL:", err);
+                    reject(err);
+                }
+            });
+        }
+        
+        // Create a badge for an attendee with proper QR code
+        async function createBadgeCard(attendee) {
+            // Create badge card container
+            const badgeCard = document.createElement('div');
+            badgeCard.className = 'badge-card';
+            badgeCard.setAttribute('data-attendee-id', attendee.id);
+            
+            // Create badge header
+            const badgeHeader = document.createElement('div');
+            badgeHeader.className = 'badge-header';
+            badgeHeader.textContent = 'Development Center - Lille 2025';
+            badgeCard.appendChild(badgeHeader);
+            
+            // Create badge content - main area
+            const badgeContent = document.createElement('div');
+            badgeContent.className = 'badge-content';
+            
+            // Create name element
+            const badgeName = document.createElement('div');
+            badgeName.className = 'badge-name';
+            badgeName.textContent = attendee.name;
+            badgeContent.appendChild(badgeName);
+            
+            // Create role element
+            const badgeRole = document.createElement('div');
+            badgeRole.className = 'badge-role';
+            
+            // Format role for display
+            let roleDisplay = attendee.role || 'Participant';
+            roleDisplay = roleDisplay.split(',')
+                .map(role => role.trim())
+                .map(role => role.charAt(0).toUpperCase() + role.slice(1))
+                .join(', ');
+            
+            badgeRole.textContent = roleDisplay;
+            badgeContent.appendChild(badgeRole);
+            
+            // Create QR code container
+            const badgeQR = document.createElement('div');
+            badgeQR.className = 'badge-qr';
+            
+            // Generate the QR code data URL for this attendee if not already in our cache
+            const currentUrl = window.location.href.split('?')[0]; // Get base URL without parameters
+            const attendeeUrl = `${currentUrl}?attendee=${attendee.id}`;
+            
+            if (!badgeData.has(attendee.id)) {
+                // Generate and store the QR code
+                try {
+                    const qrDataURL = await generateQRCodeDataURL(attendeeUrl);
+                    badgeData.set(attendee.id, qrDataURL);
+                } catch(err) {
+                    console.error("Error generating QR for", attendee.name, err);
+                }
+            }
+            
+            // Create an image element for the QR code
+            const qrImage = document.createElement('img');
+            qrImage.src = badgeData.get(attendee.id);
+            qrImage.alt = `QR Code for ${attendee.name}`;
+            qrImage.width = 180;
+            qrImage.height = 180;
+            badgeQR.appendChild(qrImage);
+            
+            // Add QR code to content
+            badgeContent.appendChild(badgeQR);
+            badgeCard.appendChild(badgeContent);
+            
+            // Create badge footer
+            const badgeFooter = document.createElement('div');
+            badgeFooter.className = 'badge-footer';
+            badgeFooter.textContent = 'Scan QR code to view your agenda';
+            badgeCard.appendChild(badgeFooter);
+            
+            return badgeCard;
+        }
+        
         // Generate a badge for a specific attendee
-        function generateBadge() {
+        async function generateBadge() {
             const selectedAttendeeId = badgeAttendeeSelect.value;
             
             if (!selectedAttendeeId) {
@@ -997,172 +1076,163 @@
                 return;
             }
             
-            // Create badge card
-            const badgeCard = createBadgeCard(selectedAttendee);
+            const loadingMsg = document.createElement('div');
+            loadingMsg.innerHTML = '<p class="text-center text-blue-500"><i class="fas fa-spinner fa-spin mr-2"></i> Generating badge...</p>';
+            badgeContainer.appendChild(loadingMsg);
             
-            // Show preview
-            badgePreviewContainer.innerHTML = '';
-            badgePreviewContainer.appendChild(badgeCard.cloneNode(true));
-            badgePreview.classList.remove('hidden');
-            
-            // Add to badge container
-            badgeContainer.appendChild(badgeCard);
-            
-            // Add to print container
-            badgePrintContainer.appendChild(badgeCard.cloneNode(true));
+            try {
+                // Create badge card
+                const badgeCard = await createBadgeCard(selectedAttendee);
+                
+                // Remove loading message
+                badgeContainer.removeChild(loadingMsg);
+                
+                // Show preview
+                badgePreviewContainer.innerHTML = '';
+                const previewBadge = badgeCard.cloneNode(true);
+                badgePreviewContainer.appendChild(previewBadge);
+                badgePreview.classList.remove('hidden');
+                
+                // Add to badge container
+                badgeContainer.appendChild(badgeCard);
+                
+                // Add to print container
+                const printBadge = badgeCard.cloneNode(true);
+                badgePrintContainer.appendChild(printBadge);
+            } catch (error) {
+                console.error("Error generating badge:", error);
+                loadingMsg.innerHTML = `<p class="text-center text-red-500">Error generating badge</p>`;
+            }
         }
         
         // Generate badges for all attendees
-        function generateAllBadges() {
+        async function generateAllBadges() {
             // Clear containers
             badgeContainer.innerHTML = '';
             badgePrintContainer.innerHTML = '';
-            
-            // Sort attendees by name
-            const sortedAttendees = [...attendees].sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Generate badges for all attendees
-            sortedAttendees.forEach(attendee => {
-                const badgeCard = createBadgeCard(attendee);
-                badgeContainer.appendChild(badgeCard);
-                badgePrintContainer.appendChild(badgeCard.cloneNode(true));
-            });
-            
-            // Hide preview
             badgePreview.classList.add('hidden');
-        }
-        
-        // Create a badge card for an attendee
-        function createBadgeCard(attendee) {
-            // Create badge elements
-            const badgeCard = document.createElement('div');
-            badgeCard.className = 'badge-card';
-            badgeCard.setAttribute('data-attendee-id', attendee.id);
             
-            // Create badge header
-            const badgeHeader = document.createElement('div');
-            badgeHeader.className = 'badge-header';
-            badgeHeader.textContent = 'Development Center - Lille 2025';
+            const loadingMsg = document.createElement('div');
+            loadingMsg.innerHTML = '<p class="text-center text-blue-500"><i class="fas fa-spinner fa-spin mr-2"></i> Generating all badges...</p>';
+            badgeContainer.appendChild(loadingMsg);
             
-            // Create badge content
-            const badgeContent = document.createElement('div');
-            badgeContent.className = 'badge-content';
-            
-            // Create attendee info section
-            const badgeInfo = document.createElement('div');
-            badgeInfo.className = 'badge-info';
-            
-            // Create name element
-            const badgeName = document.createElement('div');
-            badgeName.className = 'badge-name';
-            badgeName.textContent = attendee.name;
-            
-            // Create role element
-            const badgeRole = document.createElement('div');
-            badgeRole.className = 'badge-role';
-            
-            // Format role for display
-            let roleDisplay = attendee.role || 'Participant';
-            roleDisplay = roleDisplay.split(',')
-                .map(role => role.trim())
-                .map(role => role.charAt(0).toUpperCase() + role.slice(1))
-                .join(', ');
-            
-            badgeRole.textContent = roleDisplay;
-            
-            // Add name and role to info section
-            badgeInfo.appendChild(badgeName);
-            badgeInfo.appendChild(badgeRole);
-            
-            // Create QR code container
-            const badgeQR = document.createElement('div');
-            badgeQR.className = 'badge-qr';
-            
-            // Add info and QR to content (in the right order)
-            badgeContent.appendChild(badgeInfo);
-            badgeContent.appendChild(badgeQR);
-            
-            // Create badge footer
-            const badgeFooter = document.createElement('div');
-            badgeFooter.className = 'badge-footer';
-            badgeFooter.textContent = 'Scan QR code to view your agenda';
-            
-            // Assemble the badge
-            badgeCard.appendChild(badgeHeader);
-            badgeCard.appendChild(badgeContent);
-            badgeCard.appendChild(badgeFooter);
-            
-            // Generate QR code (after adding to DOM)
-            setTimeout(() => {
-                const currentUrl = window.location.href.split('?')[0]; // Get base URL without parameters
-                const attendeeUrl = `${currentUrl}?attendee=${attendee.id}`;
+            try {
+                // Sort attendees by name
+                const sortedAttendees = [...attendees].sort((a, b) => a.name.localeCompare(b.name));
                 
-                new QRCode(badgeQR, {
-                    text: attendeeUrl,
-                    width: 180,
-                    height: 180,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            }, 0);
-            
-            return badgeCard;
+                // Generate badges for all attendees
+                for (const attendee of sortedAttendees) {
+                    const badgeCard = await createBadgeCard(attendee);
+                    badgeContainer.appendChild(badgeCard);
+                    const printBadge = badgeCard.cloneNode(true);
+                    badgePrintContainer.appendChild(printBadge);
+                }
+                
+                // Remove loading message
+                badgeContainer.removeChild(loadingMsg);
+            } catch (error) {
+                console.error("Error generating all badges:", error);
+                loadingMsg.innerHTML = `<p class="text-center text-red-500">Error generating badges</p>`;
+            }
         }
         
-        // Export a single badge as PDF
+        // FIXED: Export a single badge as PDF
         async function exportSelectedBadgePdf() {
-            const selectedAttendeeId = badgeAttendeeSelect.value;
-            
-            if (!selectedAttendeeId) {
-                alert('Please select an attendee first');
-                return;
-            }
-            
-            const selectedAttendee = attendees.find(a => a.id === selectedAttendeeId);
-            
-            if (!selectedAttendee) {
-                alert('Selected attendee not found');
-                return;
-            }
-            
-            // If the badge hasn't been generated yet, generate it
-            if (!document.querySelector(`.badge-card[data-attendee-id="${selectedAttendeeId}"]`)) {
-                generateBadge();
-            }
-            
-            // Export the badge as PDF
-            const selectedBadge = document.querySelector(`.badge-card[data-attendee-id="${selectedAttendeeId}"]`);
-            if (selectedBadge) {
-                await exportBadgesToPdf([selectedBadge], `Badge - ${selectedAttendee.name}.pdf`);
-            } else {
-                alert('Failed to find the badge to export');
+            try {
+                const selectedAttendeeId = badgeAttendeeSelect.value;
+                
+                if (!selectedAttendeeId) {
+                    alert('Please select an attendee first');
+                    return;
+                }
+                
+                const selectedAttendee = attendees.find(a => a.id === selectedAttendeeId);
+                
+                if (!selectedAttendee) {
+                    alert('Selected attendee not found');
+                    return;
+                }
+                
+                // Show loading message
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-blue-500 text-white py-2 text-center z-50';
+                loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating PDF...';
+                document.body.appendChild(loadingMessage);
+                
+                // If the badge hasn't been generated yet, generate it
+                let badgeCard = document.querySelector(`.badge-card[data-attendee-id="${selectedAttendeeId}"]`);
+                if (!badgeCard) {
+                    await generateBadge();
+                    badgeCard = document.querySelector(`.badge-card[data-attendee-id="${selectedAttendeeId}"]`);
+                    
+                    // Give a moment for the QR code to render
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                if (!badgeCard) {
+                    throw new Error("Failed to find or generate the badge for export");
+                }
+                
+                // Clone the badge
+                const badgeClone = badgeCard.cloneNode(true);
+                document.body.appendChild(badgeClone);
+                
+                // Position off-screen
+                badgeClone.style.position = 'fixed';
+                badgeClone.style.left = '-9999px';
+                badgeClone.style.top = '0';
+                
+                try {
+                    // Create a canvas from the badge
+                    const canvas = await html2canvas(badgeClone, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: 'white',
+                        windowWidth: 400,  // Ensures enough width
+                        windowHeight: 600, // Ensures enough height
+                        logging: true,
+                    });
+                    
+                    // Create a PDF
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+                    
+                    // Add the image to the PDF - centered on an A4 page
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // Center the badge on the A4 page
+                    const pageWidth = 210;  // A4 width in mm
+                    const pageHeight = 297; // A4 height in mm
+                    const badgeWidth = 105;  // Badge width in mm
+                    const badgeHeight = 148.5; // Badge height in mm
+                    const xPos = (pageWidth - badgeWidth) / 2;
+                    const yPos = (pageHeight - badgeHeight) / 2;
+                    
+                    pdf.addImage(imgData, 'PNG', xPos, yPos, badgeWidth, badgeHeight);
+                    
+                    // Save the PDF
+                    pdf.save(`Badge - ${selectedAttendee.name}.pdf`);
+                } finally {
+                    // Remove the clone
+                    document.body.removeChild(badgeClone);
+                }
+            } catch (error) {
+                console.error('Error exporting PDF:', error);
+                alert(`Failed to export PDF: ${error.message}`);
+            } finally {
+                // Remove loading message if it exists
+                const loadingMessage = document.querySelector('.fixed.top-0.left-0.right-0.bg-blue-500');
+                if (loadingMessage) document.body.removeChild(loadingMessage);
             }
         }
         
-        // Export all badges as PDF
+        // FIXED: Export all badges as PDF
         async function exportAllBadgesPdf() {
-            // If no badges have been generated yet, generate them
-            if (badgeContainer.children.length === 0) {
-                generateAllBadges();
-            }
-            
-            // Export all badges as a single PDF
-            if (badgeContainer.children.length > 0) {
-                const badgeElements = Array.from(badgeContainer.querySelectorAll('.badge-card'));
-                await exportBadgesToPdf(badgeElements, 'All Badges.pdf');
-            } else {
-                alert('No badges to export. Generate badges first.');
-            }
-        }
-        
-        // Export badges to PDF with A4 paper size
-        async function exportBadgesToPdf(badgeElements, filename) {
-            if (!badgeElements || badgeElements.length === 0) {
-                alert('No badges to export');
-                return;
-            }
-            
             try {
                 // Show loading message
                 const loadingMessage = document.createElement('div');
@@ -1170,74 +1240,92 @@
                 loadingMessage.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating PDF...';
                 document.body.appendChild(loadingMessage);
                 
-                // Initialize jsPDF with A4 size
+                // If no badges have been generated yet, generate them
+                if (badgeContainer.children.length === 0) {
+                    await generateAllBadges();
+                    // Give time for QR codes to render
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // Get all badge elements
+                const badgeElements = Array.from(badgeContainer.querySelectorAll('.badge-card'));
+                
+                if (badgeElements.length === 0) {
+                    throw new Error('No badges to export. Please generate badges first.');
+                }
+                
+                // Create a PDF with A4 size
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: 'a4',
+                    format: 'a4'
                 });
                 
                 // A4 dimensions
-                const pageWidth = 210;
-                const pageHeight = 297;
+                const pageWidth = 210;  // mm
+                const pageHeight = 297; // mm
                 
-                // Badge dimensions (A4 divided by 4 - 2x2 layout)
-                const badgeWidth = 105;
-                const badgeHeight = 148.5;
+                // Badge dimensions
+                const badgeWidth = 105;  // mm (half of A4 width)
+                const badgeHeight = 148.5; // mm (half of A4 height)
                 
-                // Process each badge
+                // For each badge
                 for (let i = 0; i < badgeElements.length; i++) {
-                    // Add a new page after every 4 badges (except before the first one)
+                    // Add a new page for each set of 4 badges (except for the first page)
                     if (i > 0 && i % 4 === 0) {
                         pdf.addPage();
                     }
                     
-                    // Calculate position (2x2 grid)
-                    const column = i % 2;
-                    const row = Math.floor((i % 4) / 2);
-                    const xPos = column * badgeWidth;
-                    const yPos = row * badgeHeight;
+                    const badgeIndex = i % 4;
+                    const row = Math.floor(badgeIndex / 2);
+                    const col = badgeIndex % 2;
+                    const x = col * badgeWidth;
+                    const y = row * badgeHeight;
                     
-                    // Create a clone of the badge for processing
-                    const badge = badgeElements[i];
-                    const badgeClone = badge.cloneNode(true);
-                    badgeClone.style.margin = '0';
-                    badgeClone.style.borderRadius = '0';
-                    badgeClone.style.boxShadow = 'none';
+                    // Clone the badge for clean capture
+                    const badgeClone = badgeElements[i].cloneNode(true);
+                    
+                    // Set fixed dimensions for rendering
                     badgeClone.style.width = `${badgeWidth}mm`;
                     badgeClone.style.height = `${badgeHeight}mm`;
-                    
-                    // Temporarily add the clone to the document for rendering
                     badgeClone.style.position = 'fixed';
+                    badgeClone.style.top = '0';
                     badgeClone.style.left = '-9999px';
+                    
+                    // Add to document for rendering
                     document.body.appendChild(badgeClone);
                     
-                    // Convert to canvas and add to PDF
-                    const canvas = await html2canvas(badgeClone, {
-                        scale: 2, // Higher quality
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: 'white'
-                    });
-                    
-                    // Remove the clone from document
-                    document.body.removeChild(badgeClone);
-                    
-                    // Add the canvas to PDF
-                    const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', xPos, yPos, badgeWidth, badgeHeight);
+                    try {
+                        // Create canvas from badge
+                        const canvas = await html2canvas(badgeClone, {
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: 'white',
+                            windowWidth: 400,
+                            windowHeight: 600,
+                            logging: true
+                        });
+                        
+                        // Add to PDF
+                        const imgData = canvas.toDataURL('image/png');
+                        pdf.addImage(imgData, 'PNG', x, y, badgeWidth, badgeHeight);
+                    } finally {
+                        // Clean up
+                        document.body.removeChild(badgeClone);
+                    }
                 }
                 
                 // Save the PDF
-                pdf.save(filename);
-                
-                // Remove loading message
-                document.body.removeChild(loadingMessage);
-                
+                pdf.save('All Badges.pdf');
             } catch (error) {
                 console.error('Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
+                alert(`Failed to generate PDF: ${error.message}`);
+            } finally {
+                // Remove loading message
+                const loadingMessage = document.querySelector('.fixed.top-0.left-0.right-0.bg-blue-500');
+                if (loadingMessage) document.body.removeChild(loadingMessage);
             }
         }
         
