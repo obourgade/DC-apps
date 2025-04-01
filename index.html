@@ -19,8 +19,10 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#5D5CDE',
-                        secondary: '#6D28D9',
+                        primary: '#5D5CDE', // for participants
+                        secondary: '#30A46C', // for observers/role players
+                        observer: '#30A46C',  // Green color for observers
+                        roleplayer: '#F97316', // Orange color for role players
                     },
                     fontFamily: {
                         sans: ['Poppins', 'sans-serif'],
@@ -140,7 +142,6 @@
         }
         
         .badge-header {
-            background-color: #5D5CDE;
             color: white;
             padding: 15px;
             text-align: center;
@@ -152,6 +153,18 @@
             justify-content: center;
         }
         
+        .badge-header.participant {
+            background-color: #5D5CDE; /* Purple/blue for participants */
+        }
+        
+        .badge-header.observer {
+            background-color: #30A46C; /* Green for observers */
+        }
+        
+        .badge-header.roleplayer {
+            background-color: #F97316; /* Orange for role players */
+        }
+        
         .badge-content {
             padding: 20px;
             text-align: center;
@@ -160,6 +173,12 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+        }
+        
+        .badge-logo {
+            max-width: 180px;
+            max-height: 60px;
+            margin-bottom: 15px;
         }
         
         .badge-name {
@@ -191,9 +210,65 @@
             align-items: center;
             justify-content: center;
         }
+        
+        /* Role color indicators */
+        .badge-role-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .role-indicator-participant {
+            background-color: #5D5CDE;
+        }
+        
+        .role-indicator-observer {
+            background-color: #30A46C;
+        }
+        
+        .role-indicator-roleplayer {
+            background-color: #F97316;
+        }
+        
+        /* Default logo for badges */
+        .default-badge-logo {
+            width: 180px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #5D5CDE;
+        }
+        
+        /* QR Debug info */
+        .qr-debug-info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            font-size: 12px;
+            text-align: center;
+            z-index: 9999;
+            max-height: 150px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen font-sans">
+    <!-- Debug Info for QR Code -->
+    <div id="qr-debug-info" class="qr-debug-info hidden">
+        <p>QR Code Debug Information</p>
+        <p id="qr-debug-text"></p>
+    </div>
+
     <!-- GitHub CSV URLs -->
     <script>
         // URLs for fetching data from GitHub-hosted CSV files
@@ -207,6 +282,9 @@
         
         // Enable or disable maintenance mode
         const MAINTENANCE_MODE = false; // Set to true to enable maintenance mode
+        
+        // Enable QR code debugging
+        const QR_DEBUG_MODE = true; // Set to false to disable in production
     </script>
 
     <div class="container mx-auto px-4 py-6 max-w-6xl">
@@ -296,7 +374,7 @@
             
             <div class="mb-6">
                 <h3 class="font-medium mb-2">1. Upload Logo</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload a logo image (PNG or JPEG, max 2MB)</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload a logo image (PNG or JPEG, max 2MB) for the app and badges</p>
                 <div class="flex items-center gap-2">
                     <input type="file" id="logo-image" accept="image/png,image/jpeg,image/jpg" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
                     <button id="remove-logo" class="text-sm text-red-500 hover:text-red-600">Remove Logo</button>
@@ -309,6 +387,24 @@
             <div class="mb-6">
                 <h3 class="font-medium mb-2">2. Badge Generator</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Generate attendee badges with QR codes for the agenda app</p>
+                
+                <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg mb-4">
+                    <h4 class="text-sm font-medium mb-2">Badge Color Legend:</h4>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex items-center">
+                            <span class="badge-role-indicator role-indicator-participant"></span>
+                            <span>Participants</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="badge-role-indicator role-indicator-observer"></span>
+                            <span>Observers</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="badge-role-indicator role-indicator-roleplayer"></span>
+                            <span>Role Players</span>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Select Attendee:</label>
@@ -567,6 +663,30 @@
         let meetings = [];
         let badgeData = new Map(); // Store QR code data
         
+        // Track logo data
+        let logoData = null;
+        
+        // Debug functions
+        const qrDebugInfo = document.getElementById('qr-debug-info');
+        const qrDebugText = document.getElementById('qr-debug-text');
+        
+        function showDebugInfo(message) {
+            if (!QR_DEBUG_MODE) return;
+            
+            qrDebugInfo.classList.remove('hidden');
+            qrDebugText.textContent = message;
+            console.log("[QR DEBUG]", message);
+        }
+        
+        // Show debug info for QR code landing
+        if (QR_DEBUG_MODE) {
+            const fullUrl = window.location.href;
+            const urlParams = new URLSearchParams(window.location.search);
+            const attendeeId = urlParams.get('attendee');
+            
+            showDebugInfo(`Loaded URL: ${fullUrl} | Attendee param: ${attendeeId || 'none'}`);
+        }
+        
         // DOM elements
         const loadingContainer = document.getElementById('loading-container');
         const mainContent = document.getElementById('main-content');
@@ -671,6 +791,21 @@
         const logoPreview = document.getElementById('logo-preview');
         const logoPreviewImage = document.getElementById('logo-preview-image');
         
+        // Function to determine the role color class
+        function getRoleColorClass(role) {
+            if (!role) return 'participant';
+            
+            const roleLower = role.toLowerCase();
+            
+            if (roleLower.includes('observer')) {
+                return 'observer';
+            } else if (roleLower.includes('roleplayer') || roleLower.includes('role player')) {
+                return 'roleplayer';
+            } else {
+                return 'participant';
+            }
+        }
+        
         // Fetch data from GitHub-hosted CSV files
         async function loadData() {
             try {
@@ -747,7 +882,7 @@
                         meetings = meetingsResults.data.map(row => {
                             // Map column names to expected properties
                             const meetingInfo = {
-                                id: row.id || row.ID || row["Meeting ID"] || row["Meeting ID "] || "",
+                                id: (row.id || row.ID || row["Meeting ID"] || row["Meeting ID "] || "").toString(),
                                 title: row.title || row.Title || row["Meeting Title"] || row["Meeting Title "] || "",
                                 start: row.start || row.Start || row["Start Time"] || row["Start Time "] || "",
                                 end: row.end || row.End || row["End Time"] || row["End Time "] || "",
@@ -811,11 +946,11 @@
                 { id: "3", name: "Magdalena Dudziuk", role: "participant" },
                 { id: "4", name: "Melanie Dehorter", role: "participant" },
                 { id: "5", name: "Joanna Osemlak", role: "participant" },
-                { id: "6", name: "Michelle Wiseman", role: "participant" },
-                { id: "7", name: "Olivia Dole", role: "participant" },
-                { id: "8", name: "Robert Wloch", role: "participant" },
-                { id: "9", name: "Sarah Mambo", role: "participant" },
-                { id: "10", name: "Riadh Dehimat", role: "participant" }
+                { id: "6", name: "Michelle Wiseman", role: "observer" },
+                { id: "7", name: "Olivia Dole", role: "roleplayer" },
+                { id: "8", name: "Robert Wloch", role: "observer" },
+                { id: "9", name: "Sarah Mambo", role: "roleplayer" },
+                { id: "10", name: "Riadh Dehimat", role: "observer,roleplayer" }
             ];
             
             // Sample meetings data
@@ -856,14 +991,33 @@
             const attendeeId = urlParams.get('attendee');
             
             if (attendeeId) {
+                if (QR_DEBUG_MODE) {
+                    showDebugInfo(`Detected attendee ID in URL: ${attendeeId}`);
+                }
+                
                 // Check if it's a valid attendee ID
                 const attendeeExists = attendees.some(a => a.id === attendeeId);
                 
                 if (attendeeExists) {
+                    if (QR_DEBUG_MODE) {
+                        showDebugInfo(`Valid attendee found, showing agenda for ID: ${attendeeId}`);
+                    }
+                    
                     // Set the dropdown to the selected attendee
                     attendeeSelect.value = attendeeId;
-                    // Show their agenda
-                    showPersonalAgenda();
+                    
+                    // Show their agenda after a short delay to ensure UI is ready
+                    setTimeout(() => {
+                        showPersonalAgenda();
+                    }, 100);
+                } else {
+                    if (QR_DEBUG_MODE) {
+                        showDebugInfo(`Invalid attendee ID: ${attendeeId}`);
+                    }
+                    
+                    // Show error message for invalid attendee ID
+                    errorMessage.textContent = 'The requested attendee was not found. Please select a name from the list below.';
+                    errorMessage.classList.remove('hidden');
                 }
             }
             
@@ -935,7 +1089,12 @@
             }
             
             // Clear any previous error messages
-            errorMessage.classList.add('hidden');
+            if (!errorMessage.classList.contains('hidden')) {
+                // Only clear the error if it's a generic one, not a QR code related error
+                if (!errorMessage.textContent.includes('requested attendee was not found')) {
+                    errorMessage.classList.add('hidden');
+                }
+            }
         }
         
         // Populate badge attendee dropdown when admin panel is opened
@@ -952,7 +1111,21 @@
             sortedAttendees.forEach(attendee => {
                 const option = document.createElement('option');
                 option.value = attendee.id;
+                
+                // Get the role indicator color
+                const roleColorClass = getRoleColorClass(attendee.role);
+                let roleColor = '#5D5CDE'; // Default color for participants
+                
+                if (roleColorClass === 'observer') {
+                    roleColor = '#30A46C';
+                } else if (roleColorClass === 'roleplayer') {
+                    roleColor = '#F97316';
+                }
+                
+                // Add a colored dot indicator before the name
                 option.textContent = attendee.name;
+                option.setAttribute('data-role', attendee.role || 'participant');
+                
                 badgeAttendeeSelect.appendChild(option);
             });
         }
@@ -984,22 +1157,40 @@
             });
         }
         
-        // Create a badge for an attendee with proper QR code
+        // Create a badge for an attendee with proper QR code - UPDATED TO INCLUDE LOGO
         async function createBadgeCard(attendee) {
             // Create badge card container
             const badgeCard = document.createElement('div');
             badgeCard.className = 'badge-card';
             badgeCard.setAttribute('data-attendee-id', attendee.id);
             
-            // Create badge header
+            // Determine role color
+            const roleColorClass = getRoleColorClass(attendee.role);
+            
+            // Create badge header with role-specific color
             const badgeHeader = document.createElement('div');
-            badgeHeader.className = 'badge-header';
+            badgeHeader.className = `badge-header ${roleColorClass}`;
             badgeHeader.textContent = 'Development Center - Lille 2025';
             badgeCard.appendChild(badgeHeader);
             
             // Create badge content - main area
             const badgeContent = document.createElement('div');
             badgeContent.className = 'badge-content';
+            
+            // Add logo if available
+            if (logoData) {
+                const logoImg = document.createElement('img');
+                logoImg.className = 'badge-logo';
+                logoImg.src = logoData;
+                logoImg.alt = 'Company Logo';
+                badgeContent.appendChild(logoImg);
+            } else {
+                // Add a default text-based logo
+                const defaultLogo = document.createElement('div');
+                defaultLogo.className = 'default-badge-logo';
+                defaultLogo.textContent = 'Development Center';
+                badgeContent.appendChild(defaultLogo);
+            }
             
             // Create name element
             const badgeName = document.createElement('div');
@@ -1025,9 +1216,16 @@
             const badgeQR = document.createElement('div');
             badgeQR.className = 'badge-qr';
             
-            // Generate the QR code data URL for this attendee if not already in our cache
-            const currentUrl = window.location.href.split('?')[0]; // Get base URL without parameters
-            const attendeeUrl = `${currentUrl}?attendee=${attendee.id}`;
+            // IMPROVED QR URL GENERATION:
+            // Get absolute base URL without any parameters
+            let baseUrl = window.location.origin + window.location.pathname;
+            // Ensure clean URL by removing any trailing slashes or query parameters
+            baseUrl = baseUrl.replace(/\/+$/, '');
+            
+            // Create a more reliable URL with clear parameter format
+            const attendeeUrl = `${baseUrl}?attendee=${encodeURIComponent(attendee.id)}`;
+            
+            console.log(`Generated QR URL for ${attendee.name}: ${attendeeUrl}`);
             
             if (!badgeData.has(attendee.id)) {
                 // Generate and store the QR code
@@ -1136,7 +1334,7 @@
             }
         }
         
-        // FIXED: Export a single badge as PDF
+        // Export a single badge as PDF
         async function exportSelectedBadgePdf() {
             try {
                 const selectedAttendeeId = badgeAttendeeSelect.value;
@@ -1231,7 +1429,7 @@
             }
         }
         
-        // FIXED: Export all badges as PDF
+        // Export all badges as PDF
         async function exportAllBadgesPdf() {
             try {
                 // Show loading message
@@ -1358,23 +1556,30 @@
             const reader = new FileReader();
             
             reader.onload = function(e) {
-                const logoData = e.target.result;
+                const data = e.target.result;
+                
+                // Store the logo data
+                logoData = data;
                 
                 // Show logo preview
-                logoPreviewImage.src = logoData;
+                logoPreviewImage.src = data;
                 logoPreview.classList.remove('hidden');
                 
-                // Show logo in app header only
-                appLogo.src = logoData;
+                // Show logo in app header
+                appLogo.src = data;
                 logoContainer.classList.remove('hidden');
+                
+                // Clear any existing badges to regenerate with logo
+                clearBadges();
             };
             
             reader.readAsDataURL(file);
         }
         
         function handleRemoveLogo() {
-            // Clear file input
+            // Clear file input and logo data
             logoImageInput.value = '';
+            logoData = null;
             
             // Hide preview
             logoPreviewImage.src = '';
@@ -1383,6 +1588,9 @@
             // Hide logo in app
             appLogo.src = '';
             logoContainer.classList.add('hidden');
+            
+            // Clear any existing badges to regenerate without logo
+            clearBadges();
         }
         
         // Setup the logo for the header (simplified)
