@@ -274,6 +274,7 @@
         // URLs for fetching data from GitHub-hosted CSV files
         const GITHUB_ATTENDEES_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/attendees.csv";
         const GITHUB_MEETINGS_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/meetings.csv";
+        const GITHUB_LOGO_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/logo.jpg";
         
         // Google Sheets configuration (backup)
         const GOOGLE_SHEET_ID = "your_google_sheet_id_here";
@@ -283,8 +284,8 @@
         // Enable or disable maintenance mode
         const MAINTENANCE_MODE = false; // Set to true to enable maintenance mode
         
-        // Enable QR code debugging
-        const QR_DEBUG_MODE = false; // Set to false to disable in production
+        // QR code debugging disabled for production
+        const QR_DEBUG_MODE = false; // Set to true to enable debugging
     </script>
 
     <div class="container mx-auto px-4 py-6 max-w-6xl">
@@ -1593,10 +1594,40 @@
             clearBadges();
         }
         
-        // Setup the logo for the header (simplified)
+        // Setup the logo for the header with GitHub-hosted logo
         function loadSavedLogo() {
-            console.log('Logo loading skipped (localStorage unavailable in sandbox)');
-            // No default logo anymore, just using the sun/moon toggle
+            // Load logo from GitHub
+            if (GITHUB_LOGO_URL) {
+                fetch(GITHUB_LOGO_URL)
+                    .then(response => {
+                        if (response.ok) return response.blob();
+                        throw new Error('Logo not found');
+                    })
+                    .then(blob => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            // Store the logo data
+                            logoData = e.target.result;
+                            
+                            // Show logo in app header
+                            appLogo.src = logoData;
+                            logoContainer.classList.remove('hidden');
+                            
+                            // Also show in preview if admin panel is open
+                            if (logoPreview && !logoPreview.classList.contains('hidden')) {
+                                logoPreviewImage.src = logoData;
+                            }
+                            
+                            console.log('Logo loaded successfully from GitHub');
+                        };
+                        reader.readAsDataURL(blob);
+                    })
+                    .catch(error => {
+                        console.log('Logo loading failed:', error);
+                    });
+            } else {
+                console.log('No GitHub logo URL configured');
+            }
         }
         
         // Logo event listeners
