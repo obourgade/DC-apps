@@ -265,6 +265,148 @@
             max-height: 150px;
             overflow-y: auto;
         }
+        
+        /* Matrix View Styles - Excel-like table */
+        .matrix-table {
+            border-collapse: collapse;
+            width: max-content;
+            min-width: 100%;
+            font-size: 11px;
+            background-color: white;
+        }
+        
+        .matrix-table th, .matrix-table td {
+            border: 1px solid #d1d5db;
+            padding: 4px 6px;
+            vertical-align: middle;
+            height: 28px;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
+        .matrix-table th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .matrix-time-cell {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            text-align: center;
+            min-width: 70px;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .matrix-attendee-header {
+            background-color: #5D5CDE;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            min-width: 120px;
+            max-width: 120px;
+        }
+        
+        /* Activity background colors */
+        .activity-kickoff { background-color: rgba(59, 130, 246, 0.1); }
+        .activity-group-prep { background-color: rgba(16, 185, 129, 0.2); }
+        .activity-group-discussion { background-color: rgba(168, 85, 247, 0.1); }
+        .activity-group-presentation { background-color: rgba(14, 165, 233, 0.1); }
+        .activity-break { background-color: rgba(245, 158, 11, 0.1); }
+        .activity-case-study { background-color: rgba(239, 68, 68, 0.1); }
+        .activity-development { background-color: rgba(249, 115, 22, 0.1); }
+        .activity-case-presentation { background-color: rgba(20, 184, 166, 0.1); }
+        .activity-observer { background-color: rgba(250, 204, 21, 0.1); }
+        .activity-feedback { background-color: rgba(124, 58, 237, 0.1); }
+        .activity-lunch { background-color: rgba(16, 185, 129, 0.1); }
+        .activity-psychometrics { background-color: rgba(156, 163, 175, 0.1); }
+        .activity-vendor { background-color: rgba(20, 184, 166, 0.1); }
+        .activity-networking { background-color: rgba(245, 158, 11, 0.1); }
+        .activity-training { background-color: rgba(168, 85, 247, 0.1); }
+        .activity-calibration { background-color: rgba(156, 163, 175, 0.1); }
+        
+        .room-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 9px;
+        }
+        
+        /* Dark mode styles for matrix */
+        .dark .matrix-table {
+            background-color: #1f2937;
+        }
+        
+        .dark .matrix-table th {
+            background-color: #374151;
+            color: #f3f4f6;
+            border-color: #4b5563;
+        }
+        
+        .dark .matrix-table td {
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        
+        .dark .matrix-time-cell {
+            background-color: #374151;
+            color: #f3f4f6;
+        }
+        
+        .dark .matrix-attendee-header {
+            background-color: #4F46E5;
+        }
+        
+        .dark .room-text {
+            color: #9ca3af;
+        }
+        
+        /* Custom scrollbar for the matrix container */
+        .matrix-container::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        
+        .matrix-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .matrix-container::-webkit-scrollbar-thumb {
+            background: #5D5CDE;
+            border-radius: 4px;
+        }
+        
+        .matrix-container::-webkit-scrollbar-thumb:hover {
+            background: #4F46E5;
+        }
+        
+        .dark .matrix-container::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        
+        @media print {
+            .matrix-table {
+                font-size: 8pt !important;
+            }
+            
+            .matrix-table th, .matrix-table td {
+                padding: 2px 4px !important;
+            }
+            
+            @page {
+                size: landscape;
+                margin: 1cm;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen font-sans">
@@ -554,13 +696,18 @@
                             <option value="">-- Select your name --</option>
                             <!-- Will be populated with JavaScript -->
                         </select>
-                        <div class="flex gap-2 mt-4">
-                            <button id="view-agenda-btn" class="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded transition">
+                        <div class="flex flex-col gap-2 mt-4">
+                            <button id="view-agenda-btn" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded transition">
                                 <i class="fas fa-calendar-alt mr-2"></i> View My Agenda
                             </button>
-                            <button id="organizer-view-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded transition">
-                                <i class="fas fa-users-cog mr-2"></i> Organizer View
-                            </button>
+                            <div class="flex gap-2">
+                                <button id="organizer-view-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded transition">
+                                    <i class="fas fa-users-cog mr-2"></i> Organizer View
+                                </button>
+                                <button id="matrix-view-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded transition">
+                                    <i class="fas fa-table mr-2"></i> Matrix View
+                                </button>
+                            </div>
                         </div>
                         <p id="error-message" class="mt-2 text-red-500 text-center hidden"></p>
                     </div>
@@ -633,6 +780,92 @@
                     <div class="inline-block p-6 bg-gray-100 dark:bg-gray-800 rounded-lg">
                         <i class="fas fa-calendar-times text-4xl text-gray-400 mb-4"></i>
                         <p class="text-lg text-gray-500 dark:text-gray-400">No meetings found.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matrix View Screen -->
+            <div id="matrix-view" class="hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <button id="back-from-matrix-btn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded transition flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i> Back
+                    </button>
+                    <h2 class="text-xl font-bold text-purple-600">📊 Matrix View</h2>
+                </div>
+                
+                <!-- Matrix Controls -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex-1">
+                            <label for="matrix-date-filter" class="block text-sm font-medium mb-1">Filter by date:</label>
+                            <select id="matrix-date-filter" class="p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 text-sm">
+                                <option value="all">All Days</option>
+                                <!-- Will be populated with JavaScript -->
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label for="matrix-time-precision" class="block text-sm font-medium mb-1">Time precision:</label>
+                            <select id="matrix-time-precision" class="p-2 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700 text-sm">
+                                <option value="15">15 minutes</option>
+                                <option value="30" selected>30 minutes</option>
+                                <option value="60">1 hour</option>
+                            </select>
+                        </div>
+                        <button id="print-matrix-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition">
+                            <i class="fas fa-print mr-2"></i> Print Matrix
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Debug Information -->
+                <div id="matrix-debug" class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 text-sm hidden">
+                    <h4 class="font-semibold mb-2">Debug Information:</h4>
+                    <div id="matrix-debug-content"></div>
+                </div>
+
+                <!-- Matrix Table Container -->
+                <div class="matrix-container overflow-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                    <div id="matrix-table-container">
+                        <!-- Matrix table will be generated here -->
+                    </div>
+                </div>
+                
+                <!-- Activity Legend -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mt-6">
+                    <h3 class="text-lg font-semibold mb-3">Activity Legend</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-kickoff border border-gray-300"></div>
+                            <span>Kick-off</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-group-prep border border-gray-300"></div>
+                            <span>Group Preparation</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-group-discussion border border-gray-300"></div>
+                            <span>Group Discussion</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-case-study border border-gray-300"></div>
+                            <span>Case Study</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-case-presentation border border-gray-300"></div>
+                            <span>Presentation</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-feedback border border-gray-300"></div>
+                            <span>Feedback</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-break border border-gray-300"></div>
+                            <span>Break/Lunch</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 activity-observer border border-gray-300"></div>
+                            <span>Observer Activity</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1759,6 +1992,15 @@
         const meetingSort = document.getElementById('meeting-sort');
         const noMeetingsOrganizer = document.getElementById('no-meetings-organizer');
         
+        // NEW: Matrix view elements
+        const matrixView = document.getElementById('matrix-view');
+        const matrixViewBtn = document.getElementById('matrix-view-btn');
+        const backFromMatrixBtn = document.getElementById('back-from-matrix-btn');
+        const matrixTableContainer = document.getElementById('matrix-table-container');
+        const matrixDateFilter = document.getElementById('matrix-date-filter');
+        const matrixTimePrecision = document.getElementById('matrix-time-precision');
+        const printMatrixBtn = document.getElementById('print-matrix-btn');
+        
         // Organizer stats elements
         const totalMeetingsOrganizerEl = document.getElementById('total-meetings-organizer');
         const totalAttendeesOrganizerEl = document.getElementById('total-attendees-organizer');
@@ -1768,8 +2010,10 @@
         // Event listeners
         viewAgendaBtn.addEventListener('click', showPersonalAgenda);
         organizerViewBtn.addEventListener('click', showOrganizerView);
+        matrixViewBtn.addEventListener('click', showMatrixView);
         backBtn.addEventListener('click', showWelcomeScreen);
         backFromOrganizerBtn.addEventListener('click', showWelcomeScreen);
+        backFromMatrixBtn.addEventListener('click', showWelcomeScreen);
         
         // Logo handling functions
         function handleLogoUpload(event) {
@@ -2905,9 +3149,445 @@
             }
         }
 
+        // NEW: Matrix view functions
+        function showMatrixView() {
+            // Hide other screens, show matrix view
+            welcomeScreen.classList.add('hidden');
+            personalAgenda.classList.add('hidden');
+            organizerView.classList.add('hidden');
+            matrixView.classList.remove('hidden');
+            
+            // Initialize date filter
+            populateMatrixDateFilter();
+            
+            // Generate matrix
+            generateMatrix();
+            
+            // Add event listeners for matrix controls
+            matrixDateFilter.addEventListener('change', generateMatrix);
+            matrixTimePrecision.addEventListener('change', generateMatrix);
+            printMatrixBtn.addEventListener('click', () => window.print());
+        }
+        
+        function populateMatrixDateFilter() {
+            // Clear existing options except "All Days"
+            while (matrixDateFilter.options.length > 1) {
+                matrixDateFilter.remove(1);
+            }
+            
+            // Get unique dates from meetings
+            const uniqueDates = new Set();
+            meetings.forEach(meeting => {
+                const startDate = parseDate(meeting.start);
+                if (startDate) {
+                    const dateStr = startDate.toDateString();
+                    uniqueDates.add(dateStr);
+                }
+            });
+            
+            // Add date options
+            Array.from(uniqueDates).sort((a, b) => new Date(a) - new Date(b)).forEach((dateStr, index) => {
+                const option = document.createElement('option');
+                option.value = dateStr;
+                option.textContent = `Day ${index + 1} - ${new Date(dateStr).toLocaleDateString()}`;
+                matrixDateFilter.appendChild(option);
+            });
+        }
+        
+        function classifyActivity(meeting) {
+            const title = meeting.title.toLowerCase();
+            const location = meeting.location.toLowerCase();
+            
+            // Classify based on meeting title and type
+            if (title.includes('kick') || title.includes('opening') || title.includes('closing')) {
+                return 'kickoff';
+            } else if (title.includes('break') || title.includes('coffee') || title.includes('networking')) {
+                return 'break';
+            } else if (title.includes('lunch') || title.includes('meal')) {
+                return 'lunch';
+            } else if (title.includes('feedback') || title.includes('debrief')) {
+                return 'feedback';
+            } else if (title.includes('preparation') || title.includes('prep')) {
+                return 'group-prep';
+            } else if (title.includes('discussion') || title.includes('group')) {
+                return 'group-discussion';
+            } else if (title.includes('presentation') || title.includes('present')) {
+                return 'case-presentation';
+            } else if (title.includes('case study') || title.includes('case')) {
+                return 'case-study';
+            } else if (title.includes('development') || title.includes('explore')) {
+                return 'development';
+            } else if (title.includes('vendor') || title.includes('meeting')) {
+                return 'vendor';
+            } else if (title.includes('training') || title.includes('workshop')) {
+                return 'training';
+            } else if (title.includes('psychometric') || title.includes('assessment')) {
+                return 'psychometrics';
+            } else if (title.includes('calibration')) {
+                return 'calibration';
+            } else if (title.includes('observer') || meeting.observers?.length > meeting.participants?.length) {
+                return 'observer';
+            } else {
+                return 'group-discussion'; // Default
+            }
+        }
+        
+        // Debug information display function
+        function showMatrixDebugInfo(message) {
+            const debugEl = document.getElementById('matrix-debug');
+            const debugContent = document.getElementById('matrix-debug-content');
+            
+            debugEl.classList.remove('hidden');
+            debugContent.innerHTML += `<div class="mb-1">${message}</div>`;
+            console.log(message);
+        }
+        
+        function clearMatrixDebugInfo() {
+            const debugEl = document.getElementById('matrix-debug');
+            const debugContent = document.getElementById('matrix-debug-content');
+            
+            debugEl.classList.add('hidden');
+            debugContent.innerHTML = '';
+        }
+        
+        function generateMatrix() {
+            clearMatrixDebugInfo();
+            
+            showMatrixDebugInfo('🔄 Starting matrix generation...');
+            showMatrixDebugInfo(`📊 Total meetings available: ${meetings.length}`);
+            showMatrixDebugInfo(`👥 Total attendees available: ${attendees.length}`);
+            
+            const timePrecision = parseInt(matrixTimePrecision.value);
+            const selectedDate = matrixDateFilter.value;
+            
+            showMatrixDebugInfo(`⏱️ Time precision: ${timePrecision} minutes`);
+            showMatrixDebugInfo(`📅 Selected date filter: ${selectedDate}`);
+            
+            // Filter meetings by selected date
+            let filteredMeetings = meetings;
+            if (selectedDate !== 'all') {
+                filteredMeetings = meetings.filter(meeting => {
+                    const startDate = parseDate(meeting.start);
+                    return startDate && startDate.toDateString() === selectedDate;
+                });
+                showMatrixDebugInfo(`🔍 Filtered to ${filteredMeetings.length} meetings for date: ${selectedDate}`);
+            } else {
+                showMatrixDebugInfo('📅 Showing all meetings (no date filter)');
+            }
+            
+            // Debug: Show sample meeting data
+            if (filteredMeetings.length > 0) {
+                console.log('Sample meeting:', JSON.stringify(filteredMeetings[0], null, 2));
+            }
+            
+            if (filteredMeetings.length === 0) {
+                matrixTableContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 mb-4">No meetings found for the selected date.</p>
+                        <p class="text-sm text-gray-400">Total meetings in system: ${meetings.length}</p>
+                        <p class="text-sm text-gray-400">Selected filter: ${selectedDate}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Get time range
+            const timeSlots = generateTimeSlots(filteredMeetings, timePrecision);
+            
+            // Sort attendees by name
+            const sortedAttendees = [...attendees].sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Debug: Check time slots generation
+            console.log('Generated time slots:', timeSlots.length);
+            if (timeSlots.length > 0) {
+                console.log('First time slot:', timeSlots[0]);
+                console.log('Last time slot:', timeSlots[timeSlots.length - 1]);
+            }
+            
+            if (timeSlots.length === 0) {
+                matrixTableContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 mb-4">No valid time slots could be generated.</p>
+                        <p class="text-sm text-gray-400">This could be due to invalid meeting dates.</p>
+                        <p class="text-sm text-gray-400">Check that meetings have valid start and end times.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create matrix table
+            const table = document.createElement('table');
+            table.className = 'matrix-table';
+            
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            // Time column header
+            const timeHeader = document.createElement('th');
+            timeHeader.className = 'matrix-time-cell';
+            timeHeader.textContent = 'TIME';
+            headerRow.appendChild(timeHeader);
+            
+            // Attendee column headers
+            sortedAttendees.forEach(attendee => {
+                const attendeeHeader = document.createElement('th');
+                attendeeHeader.className = 'matrix-attendee-header';
+                attendeeHeader.textContent = attendee.name;
+                headerRow.appendChild(attendeeHeader);
+            });
+            
+            // Add special columns
+            const observerHeader = document.createElement('th');
+            observerHeader.className = 'matrix-attendee-header';
+            observerHeader.textContent = 'Observers';
+            headerRow.appendChild(observerHeader);
+            
+            const managerHeader = document.createElement('th');
+            managerHeader.className = 'matrix-attendee-header';
+            managerHeader.textContent = 'Managers';
+            headerRow.appendChild(managerHeader);
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // Create table body
+            const tbody = document.createElement('tbody');
+            
+            // Generate matrix rows
+            timeSlots.forEach(timeSlot => {
+                const row = document.createElement('tr');
+                
+                // Time cell
+                const timeCell = document.createElement('td');
+                timeCell.className = 'matrix-time-cell';
+                timeCell.textContent = timeSlot.label;
+                row.appendChild(timeCell);
+                
+                // Find meetings that overlap with this time slot
+                const overlappingMeetings = findOverlappingMeetings(filteredMeetings, timeSlot);
+                
+                // Create matrix for this time slot
+                const matrixData = createMatrixRow(overlappingMeetings, sortedAttendees, timeSlot);
+                
+                // Add cells for each attendee
+                sortedAttendees.forEach((attendee, index) => {
+                    const cell = document.createElement('td');
+                    const cellData = matrixData.attendees[attendee.id];
+                    
+                    if (cellData) {
+                        const activityClass = classifyActivity(cellData.meeting);
+                        cell.className = `activity-${activityClass}`;
+                        
+                        // If it's a group activity, show title and room
+                        if (cellData.isGroupActivity) {
+                            cell.innerHTML = `${cellData.meeting.title}<br><span class="room-text">${cellData.meeting.location}</span>`;
+                        } else {
+                            cell.innerHTML = `${cellData.meeting.title}<br><span class="room-text">${cellData.meeting.location}</span>`;
+                        }
+                        
+                        // Handle column spanning for group activities
+                        if (cellData.colspan > 1) {
+                            cell.setAttribute('colspan', cellData.colspan);
+                            // Mark subsequent cells to skip
+                            for (let i = 1; i < cellData.colspan; i++) {
+                                const nextAttendeeId = sortedAttendees[index + i]?.id;
+                                if (nextAttendeeId) {
+                                    matrixData.attendees[nextAttendeeId] = { skip: true };
+                                }
+                            }
+                        }
+                    } else if (matrixData.attendees[attendee.id]?.skip) {
+                        // Skip this cell (it's part of a colspan)
+                        return;
+                    }
+                    
+                    row.appendChild(cell);
+                });
+                
+                // Observer column
+                const observerCell = document.createElement('td');
+                if (matrixData.observers.length > 0) {
+                    const observerActivity = matrixData.observers[0];
+                    const activityClass = classifyActivity(observerActivity);
+                    observerCell.className = `activity-${activityClass}`;
+                    observerCell.innerHTML = `${observerActivity.title}<br><span class="room-text">${observerActivity.location}</span>`;
+                }
+                row.appendChild(observerCell);
+                
+                // Manager column (usually empty)
+                const managerCell = document.createElement('td');
+                row.appendChild(managerCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            
+            // Clear container and add table
+            matrixTableContainer.innerHTML = '';
+            matrixTableContainer.appendChild(table);
+        }
+        
+        function generateTimeSlots(meetings, precision) {
+            const timeSlots = [];
+            
+            // Find earliest and latest times
+            let earliestTime = null;
+            let latestTime = null;
+            
+            meetings.forEach(meeting => {
+                const startTime = parseDate(meeting.start);
+                const endTime = parseDate(meeting.end);
+                
+                if (startTime && endTime) {
+                    if (!earliestTime || startTime < earliestTime) {
+                        earliestTime = startTime;
+                    }
+                    if (!latestTime || endTime > latestTime) {
+                        latestTime = endTime;
+                    }
+                }
+            });
+            
+            if (!earliestTime || !latestTime) return timeSlots;
+            
+            // Round to nearest time slot
+            const startHour = Math.floor(earliestTime.getHours());
+            const startMinute = Math.floor(earliestTime.getMinutes() / precision) * precision;
+            
+            const endHour = Math.ceil(latestTime.getHours());
+            const endMinute = Math.ceil(latestTime.getMinutes() / precision) * precision;
+            
+            // Generate time slots
+            let currentTime = new Date(earliestTime);
+            currentTime.setHours(startHour, startMinute, 0, 0);
+            
+            const endTimeLimit = new Date(latestTime);
+            endTimeLimit.setHours(endHour, endMinute, 0, 0);
+            
+            while (currentTime < endTimeLimit) {
+                const nextTime = new Date(currentTime.getTime() + precision * 60000);
+                
+                timeSlots.push({
+                    start: new Date(currentTime),
+                    end: new Date(nextTime),
+                    label: `${formatTime(currentTime)}-${formatTime(nextTime)}`
+                });
+                
+                currentTime = nextTime;
+            }
+            
+            return timeSlots;
+        }
+        
+        function findOverlappingMeetings(meetings, timeSlot) {
+            return meetings.filter(meeting => {
+                const meetingStart = parseDate(meeting.start);
+                const meetingEnd = parseDate(meeting.end);
+                
+                if (!meetingStart || !meetingEnd) return false;
+                
+                // Check if meeting overlaps with time slot
+                return meetingStart < timeSlot.end && meetingEnd > timeSlot.start;
+            });
+        }
+        
+        function createMatrixRow(meetings, attendees, timeSlot) {
+            const matrixData = {
+                attendees: {},
+                observers: [],
+                managers: []
+            };
+            
+            meetings.forEach(meeting => {
+                const allParticipants = meeting.participants || [];
+                const allObservers = meeting.observers || [];
+                const allConsultants = meeting.consultants || [];
+                
+                const totalAttendeeCount = allParticipants.length + allObservers.length + allConsultants.length;
+                
+                // Check if this is a group activity (affects multiple people)
+                const isGroupActivity = totalAttendeeCount > 5;
+                
+                // Handle participants
+                if (allParticipants.length > 0) {
+                    if (isGroupActivity && allParticipants.length > 3) {
+                        // Find consecutive participants for colspan
+                        const participantIndices = allParticipants.map(id => 
+                            attendees.findIndex(a => a.id === id)
+                        ).filter(index => index !== -1).sort((a, b) => a - b);
+                        
+                        if (participantIndices.length > 1) {
+                            // Create colspan for consecutive participants
+                            let start = 0;
+                            while (start < participantIndices.length) {
+                                let end = start;
+                                while (end + 1 < participantIndices.length && 
+                                       participantIndices[end + 1] === participantIndices[end] + 1) {
+                                    end++;
+                                }
+                                
+                                const firstAttendeeId = attendees[participantIndices[start]].id;
+                                const spanLength = end - start + 1;
+                                
+                                matrixData.attendees[firstAttendeeId] = {
+                                    meeting: meeting,
+                                    isGroupActivity: true,
+                                    colspan: spanLength > 1 ? spanLength : 1
+                                };
+                                
+                                start = end + 1;
+                            }
+                        } else {
+                            // Single participants
+                            allParticipants.forEach(participantId => {
+                                matrixData.attendees[participantId] = {
+                                    meeting: meeting,
+                                    isGroupActivity: false,
+                                    colspan: 1
+                                };
+                            });
+                        }
+                    } else {
+                        // Small group or individual meetings
+                        allParticipants.forEach(participantId => {
+                            matrixData.attendees[participantId] = {
+                                meeting: meeting,
+                                isGroupActivity: false,
+                                colspan: 1
+                            };
+                        });
+                    }
+                }
+                
+                // Handle observers
+                if (allObservers.length > 0) {
+                    // Check if there's a specific observer activity
+                    const observerMeeting = {
+                        ...meeting,
+                        title: meeting.title.includes('Observer') ? meeting.title : `Observer: ${meeting.title}`
+                    };
+                    matrixData.observers.push(observerMeeting);
+                }
+                
+                // Handle consultants (put them in manager column for now)
+                if (allConsultants.length > 0) {
+                    const consultantMeeting = {
+                        ...meeting,
+                        title: meeting.title.includes('Consultant') ? meeting.title : `Consultant: ${meeting.title}`
+                    };
+                    matrixData.managers.push(consultantMeeting);
+                }
+            });
+            
+            return matrixData;
+        }
+
         function showWelcomeScreen() {
             personalAgenda.classList.add('hidden');
             organizerView.classList.add('hidden');
+            matrixView.classList.add('hidden');
             welcomeScreen.classList.remove('hidden');
         }
         
