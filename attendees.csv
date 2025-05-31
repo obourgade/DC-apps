@@ -1,4 +1,4 @@
-ID,Name,Role
+﻿ID,Name,Role
 1,Joanna K,Participant
 2,Kivilcim E,Participant
 3,Magdalena D,Participant
@@ -20,7 +20,7 @@ ID,Name,Role
 19,Seda T,Participant
 20,Semih G,Participant
 21,Lukasz G,Participant
-22,Ben R,Participant
+22,Ben R ,Participant
 23,Vincent R,Participant
 24,Hamdi K,Participant
 25,Xavier DB,Observer
@@ -36,20 +36,22 @@ ID,Name,Role
 35,Nicolas M,Observer
 36,Peter D,Observer
 37,Ionut Z,Observer
-38,David A,"Observer, Role Player"
-39,Manfred E,"Observer, Role Player"
-40,Jean Marc C,"Observer, Role Player"
-41,Monika P,"Observer, Role Player"
-42,Simon P,"Observer, Role Player"
-43,Alain B,"Observer, Role Player"
-44,Lisa M,"Observer, Role Player"
-45,Justine G,Observer
-46,Justine S,Observer
-47,Lucy G,Observer
-48,Paul H,Observer
-49,Maggie J,Consultant 
-50,Stacey Z,Consultant 
-51,Antonia L,Consultant 
-52,Sam B,Consultant 
-53,Helen F,Consultant 
-54,Olivier G,Consultant 
+38,TBC,Observer
+39,David A,"Observer, Role Player"
+40,TBC,"Observer, Role Player"
+41,Manfred E,"Observer, Role Player"
+42,Jean Marc C,"Observer, Role Player"
+43,Monika P,"Observer, Role Player"
+44,Simon P,"Observer, Role Player"
+45,Alain B,"Observer, Role Player"
+46,Lisa M,"Observer, Role Player"
+47,Justine G,Observer
+48,Justine S,Observer
+49,Lucy G,Observer
+50,Paul H,Observer
+51,Maggie J,Consultant
+52,Stacey Z,Consultant
+53,Antonia L,Consultant
+54,Sam B,Consultant
+55,Helen F,Consultant
+56,Olivier G,Consultant
