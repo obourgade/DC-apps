@@ -271,17 +271,21 @@
             border-collapse: collapse;
             width: max-content;
             min-width: 100%;
-            font-size: 11px;
+            font-size: 12px;
             background-color: white;
         }
         
         .matrix-table th, .matrix-table td {
             border: 1px solid #d1d5db;
-            padding: 4px 6px;
-            vertical-align: middle;
-            height: 28px;
-            white-space: nowrap;
+            padding: 6px 8px;
+            vertical-align: top;
+            min-height: 80px;
             text-align: center;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow: visible;
+            font-size: 10px;
+            line-height: 1.2;
         }
         
         .matrix-table th {
@@ -296,23 +300,24 @@
             background-color: #f3f4f6;
             font-weight: bold;
             text-align: center;
-            min-width: 70px;
+            min-width: 90px;
+            max-width: 90px;
             position: sticky;
             left: 0;
-            z-index: 5;
+            z-index: 15;
+            font-size: 11px;
         }
         
         .matrix-attendee-header {
-            background-color: #f3f4f6;
-            color: #1f2937 !important;
+            color: white !important;
             font-weight: bold;
             text-align: center;
-            padding: 8px 4px;
+            padding: 10px 6px;
             position: sticky;
             top: 0;
             z-index: 20;
-            min-width: 80px;
-            max-width: 80px;
+            min-width: 120px;
+            max-width: 120px;
             font-size: 11px !important;
             line-height: 1.2;
             word-wrap: break-word;
@@ -322,6 +327,39 @@
             display: table-cell !important;
             vertical-align: middle !important;
             border: 1px solid #d1d5db;
+        }
+        
+        /* Different header colors for different roles */
+        .matrix-attendee-header.participant {
+            background-color: #5D5CDE !important;
+        }
+        
+        .matrix-attendee-header.observer {
+            background-color: #30A46C !important;
+        }
+        
+        .matrix-attendee-header.roleplayer {
+            background-color: #F97316 !important;
+        }
+        
+        .matrix-attendee-header.consultant {
+            background-color: #8B5CF6 !important;
+        }
+        
+        .matrix-cell-content {
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        
+        .matrix-meeting-title {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .matrix-meeting-location {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 10px;
         }
         
         /* Activity background colors */
@@ -341,6 +379,20 @@
         .activity-networking { background-color: rgba(245, 158, 11, 0.1); }
         .activity-training { background-color: rgba(168, 85, 247, 0.1); }
         .activity-calibration { background-color: rgba(156, 163, 175, 0.1); }
+        
+        /* 🌅 DAY SEPARATION STYLE - Full row with distinct color */
+        .day-transition-row {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        
+        .day-transition-cell {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            font-size: 14px !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
         
         .room-text {
             font-style: italic;
@@ -810,22 +862,18 @@
                                 <!-- Will be populated with JavaScript -->
                             </select>
                         </div>
-
-                        <button id="export-matrix-csv-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition">
-                            <i class="fas fa-file-csv mr-2"></i> Export CSV
+                        
+                        <button id="refresh-matrix-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition">
+                            <i class="fas fa-sync-alt mr-2"></i> Refresh Matrix
                         </button>
                         
-                        <button id="export-colorful-matrix-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition">
-                            <i class="fas fa-palette mr-2"></i> Export Colorful Matrix
+                        <button id="export-matrix-pdf-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition">
+                            <i class="fas fa-file-pdf mr-2"></i> Export PDF
                         </button>
                     </div>
                 </div>
                 
-                <!-- Debug Information -->
-                <div id="matrix-debug" class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 text-sm hidden">
-                    <h4 class="font-semibold mb-2">Debug Information:</h4>
-                    <div id="matrix-debug-content"></div>
-                </div>
+
 
                 <!-- Matrix Table Container -->
                 <div class="matrix-container overflow-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
@@ -3168,7 +3216,6 @@
             
             // Add event listeners for matrix controls
             matrixDateFilter.addEventListener('change', generateMatrix);
-            exportMatrixCsvBtn.addEventListener('click', exportMatrixAsCsv);
             
             // Colorful matrix export button
             const exportColorfulMatrixBtn = document.getElementById('export-colorful-matrix-btn');
@@ -3238,299 +3285,265 @@
             }
         }
         
-        // Debug information display function
-        function showMatrixDebugInfo(message) {
-            const debugEl = document.getElementById('matrix-debug');
-            const debugContent = document.getElementById('matrix-debug-content');
-            
-            debugEl.classList.remove('hidden');
-            debugContent.innerHTML += `<div class="mb-1">${message}</div>`;
-            console.log(message);
-        }
+
         
-        function clearMatrixDebugInfo() {
-            const debugEl = document.getElementById('matrix-debug');
-            const debugContent = document.getElementById('matrix-debug-content');
-            
-            debugEl.classList.add('hidden');
-            debugContent.innerHTML = '';
-        }
-        
+        // 🚀 SUPER FAST MATRIX GENERATION! ⚡
         function generateMatrix() {
-            clearMatrixDebugInfo();
             
-            const selectedDate = matrixDateFilter.value;
+            // Show loading
+            const loadingHTML = `
+                <div class="text-center py-8">
+                    <div class="loading-spinner mb-4"></div>
+                    <p class="text-blue-500">⚡ Generating ultra-fast matrix...</p>
+                </div>
+            `;
+            matrixTableContainer.innerHTML = loadingHTML;
             
-            // Filter meetings by selected date
-            let filteredMeetings = meetings;
-            if (selectedDate !== 'all') {
-                filteredMeetings = meetings.filter(meeting => {
-                    const startDate = parseDate(meeting.start);
-                    return startDate && startDate.toDateString() === selectedDate;
-                });
-            }
-            
-            if (filteredMeetings.length === 0) {
-                matrixTableContainer.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-500 mb-4">No meetings found for the selected date.</p>
-                        <p class="text-sm text-gray-400">Total meetings in system: ${meetings.length}</p>
-                        <p class="text-sm text-gray-400">Selected filter: ${selectedDate}</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Generate time slots based on filtered meetings
-            const timeSlots = generateTimeSlots(filteredMeetings);
-            
-            if (timeSlots.length === 0) {
-                matrixTableContainer.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-500 mb-4">No valid time slots could be generated.</p>
-                        <p class="text-sm text-gray-400">Check that meetings have valid start and end times.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Sort PARTICIPANTS ONLY by name (these will be our columns)
-            const participants = attendees.filter(attendee => {
-                const roleLower = (attendee.role || "").toLowerCase();
-                const roles = roleLower.split(/[,;]+/).map(r => r.trim());
-                
-                return roles.includes('participant') || 
-                       roles.includes('participants') || 
-                       roleLower.includes('part');
-            });
-            const sortedAttendees = participants.sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Create matrix table
-            const table = document.createElement('table');
-            table.className = 'matrix-table';
-            
-            // Create header row with attendee names
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            
-            // Time column header
-            const timeHeader = document.createElement('th');
-            timeHeader.className = 'matrix-time-cell';
-            timeHeader.textContent = 'TIME';
-            headerRow.appendChild(timeHeader);
-            
-            // Attendee column headers - Make sure names are visible
-            sortedAttendees.forEach(attendee => {
-                const attendeeHeader = document.createElement('th');
-                attendeeHeader.className = 'matrix-attendee-header';
-                // Use shorter name if too long
-                let displayName = attendee.name;
-                if (displayName.length > 15) {
-                    const nameParts = displayName.split(' ');
-                    if (nameParts.length > 1) {
-                        displayName = nameParts[0] + ' ' + nameParts[nameParts.length - 1].charAt(0) + '.';
-                    } else {
-                        displayName = displayName.substring(0, 12) + '...';
-                    }
-                }
-                attendeeHeader.textContent = displayName;
-                attendeeHeader.title = attendee.name; // Full name on hover
-                headerRow.appendChild(attendeeHeader);
-            });
-            
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
-            
-            // NOUVEAU: Pré-calculer les cellules fusionnées pour chaque participant
-            const mergedCells = new Map(); // Map<attendeeId, Array<{startSlotIndex, endSlotIndex, meetings}>>
-            
-            sortedAttendees.forEach(attendee => {
-                // Trouver tous les meetings de ce participant avec leurs créneaux
-                const attendeeMeetings = [];
-                
-                timeSlots.forEach((timeSlot, slotIndex) => {
-                    const meetingsInSlot = filteredMeetings.filter(meeting => {
-                        const meetingStart = parseDate(meeting.start);
-                        const meetingEnd = parseDate(meeting.end);
-                        
-                        if (!meetingStart || !meetingEnd) return false;
-                        
-                        const overlaps = meetingStart < timeSlot.end && meetingEnd > timeSlot.start;
-                        
-                        const isParticipant = meeting.participants && meeting.participants.includes(attendee.id);
-                        const isObserver = meeting.observers && meeting.observers.includes(attendee.id);
-                        const isConsultant = meeting.consultants && meeting.consultants.includes(attendee.id);
-                        
-                        return overlaps && (isParticipant || isObserver || isConsultant);
-                    });
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                try {
+                    const selectedDate = matrixDateFilter.value;
                     
-                    if (meetingsInSlot.length > 0) {
-                        attendeeMeetings.push({
-                            slotIndex: slotIndex,
-                            meetings: meetingsInSlot
+                    // 🚀 OPTIMIZED: Filter meetings by selected date
+                    let filteredMeetings = meetings;
+                    if (selectedDate !== 'all') {
+                        filteredMeetings = meetings.filter(meeting => {
+                            const startDate = parseDate(meeting.start);
+                            return startDate && startDate.toDateString() === selectedDate;
                         });
                     }
-                });
-                
-                // NOUVEAU: Regrouper les créneaux consécutifs avec le MÊME meeting
-                const mergedRanges = [];
-                let currentRange = null;
-                
-                attendeeMeetings.forEach(item => {
-                    if (currentRange === null) {
-                        // Début d'une nouvelle plage
-                        currentRange = {
-                            startSlotIndex: item.slotIndex,
-                            endSlotIndex: item.slotIndex,
-                            meetings: [...item.meetings]
-                        };
-                    } else if (item.slotIndex === currentRange.endSlotIndex + 1) {
-                        // Créneau consécutif - vérifier si c'est le MÊME meeting
-                        const currentMeeting = currentRange.meetings[0]; // Meeting principal de la plage actuelle
-                        const newMeeting = item.meetings[0]; // Meeting du nouveau créneau
-                        
-                        // Fusionner SEULEMENT si c'est le même meeting (même titre et même ID si disponible)
-                        const isSameMeeting = currentMeeting && newMeeting && (
-                            (currentMeeting.id && newMeeting.id && currentMeeting.id === newMeeting.id) ||
-                            (currentMeeting.title === newMeeting.title && currentMeeting.location === newMeeting.location)
-                        );
-                        
-                        if (isSameMeeting) {
-                            // C'est le même meeting qui continue, étendre la plage
-                            currentRange.endSlotIndex = item.slotIndex;
-                            // Pas besoin d'ajouter le meeting car c'est le même
-                        } else {
-                            // Meeting différent, sauvegarder la plage actuelle et commencer une nouvelle
-                            mergedRanges.push(currentRange);
-                            currentRange = {
-                                startSlotIndex: item.slotIndex,
-                                endSlotIndex: item.slotIndex,
-                                meetings: [...item.meetings]
-                            };
-                        }
-                    } else {
-                        // Gap détecté, sauvegarder la plage actuelle et commencer une nouvelle
-                        mergedRanges.push(currentRange);
-                        currentRange = {
-                            startSlotIndex: item.slotIndex,
-                            endSlotIndex: item.slotIndex,
-                            meetings: [...item.meetings]
-                        };
-                    }
-                });
-                
-                // Ajouter la dernière plage
-                if (currentRange !== null) {
-                    mergedRanges.push(currentRange);
-                }
-                
-                mergedCells.set(attendee.id, mergedRanges);
-            });
-            
-            // Create table body with time slots as rows
-            const tbody = document.createElement('tbody');
-            const processedCells = new Set(); // Pour éviter de créer des cellules en double
-            
-            timeSlots.forEach((timeSlot, slotIndex) => {
-                const row = document.createElement('tr');
-                
-                // Time cell (left column)
-                const timeCell = document.createElement('td');
-                timeCell.className = 'matrix-time-cell';
-                timeCell.textContent = timeSlot.label;
-                row.appendChild(timeCell);
-                
-                // For each attendee (column), check if we need to create a cell
-                sortedAttendees.forEach((attendee, attendeeIndex) => {
-                    const cellKey = `${attendee.id}-${slotIndex}`;
                     
-                    // Vérifier si cette cellule a déjà été traitée (partie d'un rowspan)
-                    if (processedCells.has(cellKey)) {
-                        // Cette cellule fait partie d'un rowspan précédent, ne pas créer de nouvelle cellule
+                    if (filteredMeetings.length === 0) {
+                        matrixTableContainer.innerHTML = `
+                            <div class="text-center py-8">
+                                <p class="text-gray-500 mb-4">No meetings found for the selected date.</p>
+                                <p class="text-sm text-gray-400">Total meetings: ${meetings.length} | Filter: ${selectedDate}</p>
+                            </div>
+                        `;
                         return;
                     }
                     
-                    const attendeeRanges = mergedCells.get(attendee.id) || [];
+                    // 🚀 OPTIMIZED: Participants ONLY for columns (as requested)
+                    const participants = attendees.filter(attendee => {
+                        const role = (attendee.role || "").toLowerCase();
+                        return role.includes('participant') || role.includes('part');
+                    }).sort((a, b) => a.name.localeCompare(b.name));
                     
-                    // Trouver la plage qui contient ce créneau
-                    const containingRange = attendeeRanges.find(range => 
-                        slotIndex >= range.startSlotIndex && slotIndex <= range.endSlotIndex
-                    );
+                    // 🚀 OPTIMIZED: Simple time slots (no complex merging)
+                    const timeSlots = generateFastTimeSlots(filteredMeetings);
                     
-                    if (containingRange && slotIndex === containingRange.startSlotIndex) {
-                        // Créer une cellule fusionnée pour toute la plage
-                        const cell = document.createElement('td');
-                        const rowspan = containingRange.endSlotIndex - containingRange.startSlotIndex + 1;
-                        
-                        if (rowspan > 1) {
-                            cell.setAttribute('rowspan', rowspan.toString());
-                        }
-                        
-                        // Marquer toutes les cellules de cette plage comme traitées
-                        for (let i = containingRange.startSlotIndex; i <= containingRange.endSlotIndex; i++) {
-                            processedCells.add(`${attendee.id}-${i}`);
-                        }
-                        
-                        // Utiliser le premier meeting pour le style et le contenu
-                        const primaryMeeting = containingRange.meetings[0];
-                        
-                        // Determine role indicators
-                        const isParticipant = primaryMeeting.participants && primaryMeeting.participants.includes(attendee.id);
-                        const isObserver = primaryMeeting.observers && primaryMeeting.observers.includes(attendee.id);
-                        const isConsultant = primaryMeeting.consultants && primaryMeeting.consultants.includes(attendee.id);
-                        
-                        let roleIndicator = '';
-                        if (isObserver) roleIndicator = ' 👁️';
-                        if (isConsultant) roleIndicator = ' 💼';
-                        
-                        // Set activity class for coloring
-                        const activityClass = classifyActivity(primaryMeeting);
-                        cell.className = `activity-${activityClass}`;
-                        
-                        // Show meeting title and location with better formatting
-                        let meetingTitle = primaryMeeting.title;
-                        if (meetingTitle.length > 20) {
-                            meetingTitle = meetingTitle.substring(0, 18) + '...';
-                        }
-                        
-                        // Si plusieurs meetings différents, indiquer le nombre
-                        const uniqueMeetings = containingRange.meetings.filter((meeting, index, arr) => 
-                            arr.findIndex(m => m.id === meeting.id) === index
-                        );
-                        
-                        let cellContent;
-                        if (uniqueMeetings.length > 1) {
-                            cellContent = `<div class="text-xs font-medium">${meetingTitle}${roleIndicator}</div><div class="room-text">+${uniqueMeetings.length-1} more</div>`;
-                        } else {
-                            cellContent = `<div class="text-xs font-medium">${meetingTitle}${roleIndicator}</div><div class="room-text">${primaryMeeting.location}</div>`;
-                        }
-                        
-                        cell.innerHTML = cellContent;
-                        
-                        // Tooltip avec tous les meetings
-                        const allTitles = uniqueMeetings.map(m => `${m.title} - ${m.location}`).join('\n');
-                        cell.title = allTitles;
-                        
-                        row.appendChild(cell);
-                    } else if (!containingRange) {
-                        // Pas de meeting pour cet attendee dans ce créneau, créer une cellule vide
-                        const cell = document.createElement('td');
-                        row.appendChild(cell);
+                    if (timeSlots.length === 0) {
+                        matrixTableContainer.innerHTML = `
+                            <div class="text-center py-8">
+                                <p class="text-gray-500 mb-4">No valid time slots.</p>
+                            </div>
+                        `;
+                        return;
                     }
-                    // Sinon, cette cellule fait partie d'un rowspan et on ne fait rien
-                });
-                
-                tbody.appendChild(row);
+                    
+                    // 🚀 OPTIMIZED: Build matrix with innerHTML (much faster than DOM creation)
+                    let matrixHTML = '<table class="matrix-table"><thead><tr>';
+                    matrixHTML += '<th class="matrix-time-cell">TIME</th>';
+                    
+                    // Header row - PARTICIPANTS with blue headers
+                    participants.forEach(attendee => {
+                        let displayName = attendee.name;
+                        if (displayName.length > 15) {
+                            const parts = displayName.split(' ');
+                            displayName = parts.length > 1 
+                                ? `${parts[0]} ${parts[parts.length - 1][0]}.`
+                                : displayName.substring(0, 12) + '...';
+                        }
+                        
+                        matrixHTML += `<th class="matrix-attendee-header participant" title="${attendee.name}">${displayName}</th>`;
+                    });
+                    
+                    matrixHTML += '</tr></thead><tbody>';
+                    
+                    // 🚀 OPTIMIZED: Pre-calculate all meetings for each PARTICIPANT (with other attendees info in cells)
+                    const attendeeMeetings = new Map();
+                    participants.forEach(attendee => {
+                        attendeeMeetings.set(attendee.id, 
+                            filteredMeetings.filter(meeting => 
+                                (meeting.participants && meeting.participants.includes(attendee.id)) ||
+                                (meeting.observers && meeting.observers.includes(attendee.id)) ||
+                                (meeting.consultants && meeting.consultants.includes(attendee.id))
+                            )
+                        );
+                    });
+                    
+                    // Data rows - PARTICIPANTS columns with detailed meeting info
+                    timeSlots.forEach(timeSlot => {
+                        // 🌅 Check if this is a DAY TRANSITION row
+                        if (timeSlot.isDayTransition) {
+                            matrixHTML += '<tr class="day-transition-row">';
+                            matrixHTML += `<td class="day-transition-cell">${timeSlot.label}</td>`;
+                            // Fill the entire row with DAY transition color
+                            for (let i = 0; i < participants.length; i++) {
+                                matrixHTML += '<td class="day-transition-cell"></td>';
+                            }
+                            matrixHTML += '</tr>';
+                            return; // Skip the rest of the processing for this slot
+                        }
+                        
+                        matrixHTML += '<tr>';
+                        matrixHTML += `<td class="matrix-time-cell">${timeSlot.label}</td>`;
+                        
+                        participants.forEach(participant => {
+                            const participantMeetingsForSlot = attendeeMeetings.get(participant.id);
+                            const meetingInSlot = participantMeetingsForSlot.find(meeting => {
+                                const start = parseDate(meeting.start);
+                                const end = parseDate(meeting.end);
+                                return start && end && start < timeSlot.end && end > timeSlot.start;
+                            });
+                            
+                            if (meetingInSlot) {
+                                // ✨ NEW: Show WHO ELSE is in the meeting
+                                let cellContent = '';
+                                
+                                // Role indicator for the participant
+                                let roleIndicator = '';
+                                if (meetingInSlot.observers && meetingInSlot.observers.includes(participant.id)) roleIndicator = ' 👁️';
+                                if (meetingInSlot.consultants && meetingInSlot.consultants.includes(participant.id)) roleIndicator = ' 💼';
+                                
+                                // Activity class
+                                const activityClass = classifyActivity(meetingInSlot);
+                                
+                                // ✨ UPDATED: Show full meeting title (no cutting)
+                                const fullTitle = meetingInSlot.title;
+                                cellContent = `<div class="matrix-meeting-title">${fullTitle}${roleIndicator}</div>`;
+                                
+                                // ✨ UPDATED: Show only observers and consultants (not other participants)
+                                const otherObservers = (meetingInSlot.observers || []).filter(id => id !== participant.id);
+                                const otherConsultants = (meetingInSlot.consultants || []).filter(id => id !== participant.id);
+                                
+                                const allOtherIds = [...otherObservers, ...otherConsultants];
+                                const totalMeetingAttendees = (meetingInSlot.participants?.length || 0) + (meetingInSlot.observers?.length || 0) + (meetingInSlot.consultants?.length || 0);
+                                
+                                // ✨ Check for special meeting types that should only show name + room
+                                const meetingTitle = meetingInSlot.title.toLowerCase();
+                                const isSpecialMeeting = meetingTitle.includes('kick off') || 
+                                                        meetingTitle.includes('kick-off') || 
+                                                        meetingTitle.includes('kickoff') || 
+                                                        meetingTitle.includes('break') || 
+                                                        meetingTitle.includes('lunch') || 
+                                                        meetingTitle.includes('workshop') || 
+                                                        meetingTitle.includes('closing') || 
+                                                        meetingTitle.includes('networking') || 
+                                                        meetingTitle.includes('survey') || 
+                                                        meetingTitle.includes('day 1') || 
+                                                        meetingTitle.includes('day 2') ||
+                                                        meetingTitle.includes('dc survey') ||
+                                                        meetingTitle.includes('dc closing');
+                                
+                                if (isSpecialMeeting) {
+                                    // ✨ For special meetings: just show meeting name + room (no names, no "All")
+                                    // Meeting title and location already added above, so we don't add anything here
+                                } else if (totalMeetingAttendees >= attendees.length * 0.8) {
+                                    // ✨ For large meetings with 80%+ attendance: show "All"
+                                    cellContent += `<div style="font-size: 8px; color: #666; line-height: 1.1;">All</div>`;
+                                } else if (allOtherIds.length > 0) {
+                                    // ✨ For regular meetings: show ALL names (no +X truncation)
+                                    const otherNames = allOtherIds.map(id => {
+                                        const attendee = attendees.find(a => a.id === id);
+                                        if (!attendee) return 'Unknown';
+                                        
+                                        // Use first name + last initial for space saving
+                                        const nameParts = attendee.name.split(' ');
+                                        if (nameParts.length > 1) {
+                                            return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+                                        }
+                                        return attendee.name.length > 8 ? attendee.name.substring(0, 8) + '.' : attendee.name;
+                                    }).filter(name => name !== 'Unknown');
+                                    
+                                    if (otherNames.length > 0) {
+                                        // ✨ Show ALL names - no truncation with +X
+                                        cellContent += `<div style="font-size: 8px; color: #666; line-height: 1.1;">${otherNames.join(', ')}</div>`;
+                                    }
+                                }
+                                
+                                cellContent += `<div class="matrix-meeting-location">${meetingInSlot.location}</div>`;
+                                
+                                matrixHTML += `<td class="activity-${activityClass}" title="${meetingInSlot.title} - ${meetingInSlot.location} | Others: ${otherObservers.length} observers, ${otherConsultants.length} consultants">
+                                    ${cellContent}
+                                </td>`;
+                            } else {
+                                matrixHTML += '<td></td>';
+                            }
+                        });
+                        
+                        matrixHTML += '</tr>';
+                    });
+                    
+                    matrixHTML += '</tbody></table>';
+                    
+                    // 🚀 SUPER FAST: Single innerHTML update
+                    matrixTableContainer.innerHTML = matrixHTML;
+                    
+
+                    
+                } catch (error) {
+                    console.error('Matrix generation error:', error);
+                    matrixTableContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-red-500">❌ Error generating matrix: ${error.message}</p>
+                            <button onclick="generateMatrix()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">Retry</button>
+                        </div>
+                    `;
+                }
+            }, 50); // Small delay to show loading
+        }
+        
+        // 🚀 OPTIMIZED: Fast time slot generation with DAY separation
+        function generateFastTimeSlots(meetings) {
+            const times = new Set();
+            meetings.forEach(meeting => {
+                const start = parseDate(meeting.start);
+                const end = parseDate(meeting.end);
+                if (start && end) {
+                    times.add(start.getTime());
+                    times.add(end.getTime());
+                }
             });
             
-            table.appendChild(tbody);
+            if (times.size === 0) return [];
             
-            // Clear container and add table
-            matrixTableContainer.innerHTML = '';
-            matrixTableContainer.appendChild(table);
+            const sortedTimes = Array.from(times).sort((a, b) => a - b);
+            const timeSlots = [];
             
-            // Show minimal success message
-            showMatrixDebugInfo(`✅ Matrix: ${timeSlots.length} time slots × ${sortedAttendees.length} participants`);
+            for (let i = 0; i < sortedTimes.length - 1; i++) {
+                const start = new Date(sortedTimes[i]);
+                const end = new Date(sortedTimes[i + 1]);
+                
+                if (end.getTime() - start.getTime() >= 60000) { // At least 1 minute
+                    // ✨ CHECK FOR DAY TRANSITION: If time gap > 6 hours, show "DAY X" instead
+                    const hoursDiff = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                    
+                    if (hoursDiff > 6) {
+                        // 🌅 BIG GAP = NEW DAY! Show "DAY 2", "DAY 3" etc.
+                        const startDay = start.getDay() || 7; // Sunday = 7
+                        const endDay = end.getDay() || 7;
+                        const dayNumber = endDay > startDay ? endDay - startDay + 1 : 2; // Simple day calculation
+                        
+                        timeSlots.push({
+                            start,
+                            end,
+                            label: `DAY ${dayNumber}`,
+                            isDayTransition: true
+                        });
+                    } else {
+                        // 🕐 REGULAR TIME SLOT
+                        timeSlots.push({
+                            start,
+                            end,
+                            label: `${formatTime(start)} - ${formatTime(end)}`,
+                            isDayTransition: false
+                        });
+                    }
+                }
+            }
+            
+            return timeSlots;
         }
         
         function generateTimeSlots(meetings, precision) {
@@ -3819,273 +3832,310 @@
             }
         }
 
-        // SANDBOX-SAFE EXPORT - Direct Table Capture! 📸✨
+        // SIMPLIFIED COLORFUL EXPORT - Sandbox Safe! 🎨✨
         async function exportMatrixAsPdf() {
-            let loadingMessage = null;
-            
             try {
-                console.log("📸 SANDBOX-SAFE EXPORT started!");
+                console.log("🎨 SIMPLIFIED COLORFUL EXPORT started!");
                 
-                // Show persistent loading message
-                loadingMessage = document.createElement('div');
-                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-green-500 text-white py-2 text-center z-50';
-                loadingMessage.innerHTML = '<i class="fas fa-camera fa-spin mr-2"></i> Step 1: Finding matrix table...';
+                // Show loading message
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-purple-500 text-white py-2 text-center z-50';
+                loadingMessage.innerHTML = '<i class="fas fa-palette fa-spin mr-2"></i> Creating beautiful colorful matrix...';
                 document.body.appendChild(loadingMessage);
                 
-                // Find the matrix table - DIRECT approach
+                // Find the matrix table
                 const matrixTable = document.querySelector('.matrix-table');
                 
                 if (!matrixTable) {
-                    throw new Error('No matrix table found. Please go to Matrix View and generate the matrix first.');
+                    throw new Error('❌ No matrix table found! Please generate the matrix first in Matrix View.');
                 }
                 
-                console.log("✅ Matrix table found, preparing for screenshot...");
+                // Get all the data we need
+                const selectedDate = matrixDateFilter.value;
                 
-                loadingMessage.innerHTML = '<i class="fas fa-camera fa-spin mr-2"></i> Step 2: Enhancing table for export...';
-                
-                // Temporarily enhance the existing table for better export
-                const originalStyle = matrixTable.style.cssText;
-                const originalParentStyle = matrixTable.parentElement.style.cssText;
-                
-                // Enhanced styling for export
-                matrixTable.style.fontSize = '16px';
-                matrixTable.style.fontFamily = 'Arial, sans-serif';
-                matrixTable.style.backgroundColor = 'white';
-                matrixTable.style.border = '2px solid #374151';
-                matrixTable.parentElement.style.backgroundColor = 'white';
-                matrixTable.parentElement.style.padding = '20px';
-                
-                // Enhance all cells for better visibility
-                const cells = matrixTable.querySelectorAll('th, td');
-                const originalCellStyles = [];
-                
-                cells.forEach((cell, index) => {
-                    originalCellStyles[index] = cell.style.cssText;
-                    
-                    cell.style.border = '1px solid #d1d5db';
-                    cell.style.padding = '12px 8px';
-                    cell.style.textAlign = 'center';
-                    cell.style.verticalAlign = 'middle';
-                    cell.style.fontSize = '14px';
-                    cell.style.lineHeight = '1.4';
-                    cell.style.color = '#1f2937';
-                    
-                    // Enhanced header styling
-                    if (cell.tagName === 'TH' || cell.classList.contains('matrix-time-cell') || cell.classList.contains('matrix-attendee-header')) {
-                        cell.style.backgroundColor = '#f3f4f6';
-                        cell.style.fontWeight = 'bold';
-                        cell.style.fontSize = '15px';
-                        cell.style.color = '#1f2937';
-                    }
-                    
-                    // Preserve activity colors with better contrast
-                    if (cell.classList.contains('activity-kickoff')) cell.style.backgroundColor = '#dbeafe';
-                    if (cell.classList.contains('activity-group-prep')) cell.style.backgroundColor = '#d1fae5';
-                    if (cell.classList.contains('activity-group-discussion')) cell.style.backgroundColor = '#e9d5ff';
-                    if (cell.classList.contains('activity-group-presentation')) cell.style.backgroundColor = '#dbeafe';
-                    if (cell.classList.contains('activity-break')) cell.style.backgroundColor = '#fef3c7';
-                    if (cell.classList.contains('activity-case-study')) cell.style.backgroundColor = '#fee2e2';
-                    if (cell.classList.contains('activity-development')) cell.style.backgroundColor = '#fed7aa';
-                    if (cell.classList.contains('activity-case-presentation')) cell.style.backgroundColor = '#ccfbf1';
-                    if (cell.classList.contains('activity-observer')) cell.style.backgroundColor = '#fef9c3';
-                    if (cell.classList.contains('activity-feedback')) cell.style.backgroundColor = '#ede9fe';
-                    if (cell.classList.contains('activity-lunch')) cell.style.backgroundColor = '#d1fae5';
-                    if (cell.classList.contains('activity-psychometrics')) cell.style.backgroundColor = '#f3f4f6';
-                    if (cell.classList.contains('activity-vendor')) cell.style.backgroundColor = '#ccfbf1';
-                    if (cell.classList.contains('activity-networking')) cell.style.backgroundColor = '#fef3c7';
-                    if (cell.classList.contains('activity-training')) cell.style.backgroundColor = '#e9d5ff';
-                    if (cell.classList.contains('activity-calibration')) cell.style.backgroundColor = '#f3f4f6';
-                });
-                
-                loadingMessage.innerHTML = '<i class="fas fa-camera fa-spin mr-2"></i> Step 3: Taking screenshot...';
-                
-                // Take screenshot with safe options
-                const canvas = await html2canvas(matrixTable.parentElement, {
-                    scale: 2, // Good resolution without being too heavy
-                    useCORS: false, // Disable CORS to avoid cross-origin issues
-                    allowTaint: false,
-                    backgroundColor: 'white',
-                    logging: false,
-                    foreignObjectRendering: false, // Safer rendering
-                    removeContainer: true
-                });
-                
-                // Restore original styles
-                matrixTable.style.cssText = originalStyle;
-                matrixTable.parentElement.style.cssText = originalParentStyle;
-                cells.forEach((cell, index) => {
-                    cell.style.cssText = originalCellStyles[index] || '';
-                });
-                
-                loadingMessage.innerHTML = '<i class="fas fa-file-image fa-spin mr-2"></i> Step 4: Choose export format...';
-                
-                // Show format choice
-                const formatChoice = await new Promise((resolve) => {
-                    const modal = document.createElement('div');
-                    modal.className = 'fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50';
-                    modal.innerHTML = `
-                        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
-                            <h3 class="text-xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200">Choose Export Format</h3>
-                            <div class="space-y-3">
-                                <button id="export-jpg" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded transition">
-                                    <i class="fas fa-file-image mr-2"></i> High-Quality JPG
-                                    <div class="text-sm opacity-90">Perfect quality, smaller file</div>
-                                </button>
-                                <button id="export-png" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded transition">
-                                    <i class="fas fa-file-image mr-2"></i> Crystal Clear PNG
-                                    <div class="text-sm opacity-90">Perfect for printing</div>
-                                </button>
-                                <button id="export-pdf" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded transition">
-                                    <i class="fas fa-file-pdf mr-2"></i> A0 PDF (Image)
-                                    <div class="text-sm opacity-90">Professional document</div>
-                                </button>
-                            </div>
-                            <button id="cancel-export" class="w-full mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition">
-                                Cancel
-                            </button>
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(modal);
-                    
-                    document.getElementById('export-jpg').onclick = () => {
-                        document.body.removeChild(modal);
-                        resolve('jpg');
-                    };
-                    document.getElementById('export-png').onclick = () => {
-                        document.body.removeChild(modal);
-                        resolve('png');
-                    };
-                    document.getElementById('export-pdf').onclick = () => {
-                        document.body.removeChild(modal);
-                        resolve('pdf');
-                    };
-                    document.getElementById('cancel-export').onclick = () => {
-                        document.body.removeChild(modal);
-                        resolve('cancel');
-                    };
-                });
-                
-                if (formatChoice === 'cancel') {
-                    loadingMessage.innerHTML = '<i class="fas fa-times mr-2"></i> Export cancelled';
-                    setTimeout(() => {
-                        if (loadingMessage && document.body.contains(loadingMessage)) {
-                            document.body.removeChild(loadingMessage);
-                        }
-                    }, 2000);
-                    return;
+                // Filter meetings by selected date
+                let filteredMeetings = meetings;
+                if (selectedDate !== 'all') {
+                    filteredMeetings = meetings.filter(meeting => {
+                        const startDate = parseDate(meeting.start);
+                        return startDate && startDate.toDateString() === selectedDate;
+                    });
                 }
                 
-                loadingMessage.innerHTML = `<i class="fas fa-download fa-spin mr-2"></i> Step 5: Creating ${formatChoice.toUpperCase()}...`;
+                // Get participants only (same as matrix display)
+                const participants = attendees.filter(attendee => {
+                    const roleLower = (attendee.role || "").toLowerCase();
+                    const roles = roleLower.split(/[,;]+/).map(r => r.trim());
+                    
+                    return roles.includes('participant') || 
+                           roles.includes('participants') || 
+                           roleLower.includes('part');
+                });
+                const sortedAttendees = participants.sort((a, b) => a.name.localeCompare(b.name));
+                
+                // Generate time slots
+                const timeSlots = generateTimeSlots(filteredMeetings);
+                
+                if (timeSlots.length === 0) {
+                    throw new Error('❌ No valid time slots could be generated.');
+                }
+                
+                // Create a beautiful HTML version for printing
+                const printableMatrix = createPrintableMatrix(timeSlots, sortedAttendees, filteredMeetings, selectedDate);
                 
                 // Generate filename
-                let filename = 'DC_Schedule_Matrix';
-                const selectedDate = matrixDateFilter.value;
+                let filename = 'DC_Schedule_Matrix_Colorful';
                 if (selectedDate !== 'all') {
                     const dateStr = new Date(selectedDate).toLocaleDateString().replace(/[\/\\:*?"<>|]/g, '_');
                     filename += `_${dateStr}`;
                 }
+                filename += '.html';
                 
-                if (formatChoice === 'jpg') {
-                    // Export as high-quality JPG
-                    const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-                    const link = document.createElement('a');
-                    link.download = filename + '_HQ.jpg';
-                    link.href = jpegDataUrl;
-                    link.click();
-                    
-                    loadingMessage.innerHTML = '<i class="fas fa-check mr-2"></i> 📸 High-Quality JPG exported!';
-                    
-                } else if (formatChoice === 'png') {
-                    // Export as crystal clear PNG
-                    const pngDataUrl = canvas.toDataURL('image/png');
-                    const link = document.createElement('a');
-                    link.download = filename + '_Crystal.png';
-                    link.href = pngDataUrl;
-                    link.click();
-                    
-                    loadingMessage.innerHTML = '<i class="fas fa-check mr-2"></i> 🖼️ Crystal Clear PNG exported!';
-                    
-                } else if (formatChoice === 'pdf') {
-                    // Export as A0 PDF with perfect image
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({
-                        orientation: 'landscape',
-                        unit: 'mm',
-                        format: 'a0',
-                        compress: true
-                    });
-                    
-                    // Calculate optimal image size for A0
-                    const a0Width = 1189;
-                    const a0Height = 841;
-                    const margin = 20;
-                    const maxWidth = a0Width - (margin * 2);
-                    const maxHeight = a0Height - (margin * 2) - 80; // Space for title
-                    
-                    // Calculate scaling to fit
-                    const imageRatio = canvas.width / canvas.height;
-                    const maxRatio = maxWidth / maxHeight;
-                    
-                    let finalWidth, finalHeight;
-                    if (imageRatio > maxRatio) {
-                        finalWidth = maxWidth;
-                        finalHeight = maxWidth / imageRatio;
-                    } else {
-                        finalHeight = maxHeight;
-                        finalWidth = maxHeight * imageRatio;
-                    }
-                    
-                    // Center the image
-                    const x = (a0Width - finalWidth) / 2;
-                    const y = 100; // After title
-                    
-                    // Add title
-                    pdf.setFontSize(36);
-                    pdf.setFont(undefined, 'bold');
-                    pdf.setTextColor(93, 92, 222);
-                    pdf.text('Development Center - Schedule Matrix', a0Width / 2, 40, { align: 'center' });
-                    
-                    if (selectedDate !== 'all') {
-                        pdf.setFontSize(20);
-                        pdf.setTextColor(107, 114, 128);
-                        pdf.setFont(undefined, 'normal');
-                        pdf.text(`Date: ${new Date(selectedDate).toLocaleDateString()}`, a0Width / 2, 70, { align: 'center' });
-                    }
-                    
-                    // Add the perfect screenshot
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight);
-                    
-                    pdf.save(filename + '_Professional.pdf');
-                    
-                    loadingMessage.innerHTML = '<i class="fas fa-check mr-2"></i> 📄 Professional A0 PDF exported!';
-                }
+                // Create downloadable HTML file
+                const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Development Center - Schedule Matrix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: white; }
+        h1 { color: #5D5CDE; text-align: center; margin-bottom: 30px; }
+        .matrix-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+        .matrix-table th, .matrix-table td { border: 1px solid #d1d5db; padding: 8px; text-align: center; vertical-align: middle; }
+        .matrix-table th { background-color: #f3f4f6; font-weight: bold; }
+        .matrix-time-cell { background-color: #f3f4f6; font-weight: bold; min-width: 80px; }
+        .matrix-attendee-header { background-color: #5D5CDE; color: black; font-weight: bold; }
+        
+        /* Beautiful Activity Colors */
+        .activity-kickoff { background-color: #dbeafe !important; }
+        .activity-group-prep { background-color: #d1fae5 !important; }
+        .activity-group-discussion { background-color: #e9d5ff !important; }
+        .activity-group-presentation { background-color: #dbeafe !important; }
+        .activity-break { background-color: #fef3c7 !important; }
+        .activity-case-study { background-color: #fee2e2 !important; }
+        .activity-development { background-color: #fed7aa !important; }
+        .activity-case-presentation { background-color: #ccfbf1 !important; }
+        .activity-observer { background-color: #fef9c3 !important; }
+        .activity-feedback { background-color: #ede9fe !important; }
+        .activity-lunch { background-color: #d1fae5 !important; }
+        .activity-psychometrics { background-color: #f3f4f6 !important; }
+        .activity-vendor { background-color: #ccfbf1 !important; }
+        .activity-networking { background-color: #fef3c7 !important; }
+        .activity-training { background-color: #e9d5ff !important; }
+        .activity-calibration { background-color: #f3f4f6 !important; }
+        
+        .room-text { font-style: italic; color: #6b7280; font-size: 10px; }
+        
+        .legend { margin-top: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .legend-item { display: flex; items-center; gap: 8px; font-size: 12px; }
+        .legend-color { width: 20px; height: 20px; border: 1px solid #ccc; }
+        
+        @media print { 
+            body { margin: 10px; }
+            @page { size: A0 landscape; margin: 1cm; }
+            .matrix-table { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Development Center - Schedule Matrix</h1>
+    ${selectedDate !== 'all' ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">Date: ${new Date(selectedDate).toLocaleDateString()}</p>` : ''}
+    ${printableMatrix}
+    
+    <div class="legend">
+        <h3 style="grid-column: 1 / -1; margin-bottom: 15px;">🌈 Activity Legend</h3>
+        <div class="legend-item"><div class="legend-color activity-kickoff"></div> Kick-off</div>
+        <div class="legend-item"><div class="legend-color activity-group-prep"></div> Group Preparation</div>
+        <div class="legend-item"><div class="legend-color activity-group-discussion"></div> Group Discussion</div>
+        <div class="legend-item"><div class="legend-color activity-case-study"></div> Case Study</div>
+        <div class="legend-item"><div class="legend-color activity-case-presentation"></div> Presentation</div>
+        <div class="legend-item"><div class="legend-color activity-feedback"></div> Feedback</div>
+        <div class="legend-item"><div class="legend-color activity-break"></div> Break/Lunch</div>
+        <div class="legend-item"><div class="legend-color activity-observer"></div> Observer Activity</div>
+    </div>
+    
+    <p style="text-align: center; margin-top: 30px; color: #888; font-size: 12px;">
+        💡 Tip: Use Ctrl+P to print this colorful matrix or save as PDF from your browser!
+    </p>
+</body>
+</html>`;
+                
+                // Download the HTML file
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.setAttribute('href', URL.createObjectURL(blob));
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Update loading message to success
+                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-green-500 text-white py-2 text-center z-50';
+                loadingMessage.innerHTML = '✅ 🎨 Colorful matrix exported! Open the HTML file and print it!';
                 
                 setTimeout(() => {
                     if (loadingMessage && document.body.contains(loadingMessage)) {
                         document.body.removeChild(loadingMessage);
                     }
-                }, 3000);
+                }, 4000);
                 
-                console.log("✅ Safe export completed!");
+                // Show additional instructions
+                setTimeout(() => {
+                    alert('🎨 COLORFUL MATRIX EXPORTED!\n\n📋 Instructions:\n1. Open the downloaded HTML file in your browser\n2. Use Ctrl+P to print\n3. Choose "Save as PDF" or print directly\n4. Enjoy your beautiful colorful matrix! 🌈');
+                }, 1000);
+                
+                console.log("✅ Colorful export completed!");
                 
             } catch (error) {
                 console.error('❌ Export Error:', error);
+                alert(`❌ Failed to export colorful matrix: ${error.message}\n\n🔧 Solution:\n1. Make sure you're in Matrix View\n2. Generate the matrix first\n3. Try again!`);
                 
-                if (loadingMessage) {
-                    loadingMessage.className = 'fixed top-0 left-0 right-0 bg-red-600 text-white py-2 text-center z-50';
-                    loadingMessage.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i> Error: ${error.message}`;
-                    
-                    setTimeout(() => {
-                        if (loadingMessage && document.body.contains(loadingMessage)) {
-                            document.body.removeChild(loadingMessage);
-                        }
-                    }, 5000);
+                // Remove loading message
+                const loadingMessage = document.querySelector('.fixed.top-0.left-0.right-0');
+                if (loadingMessage) document.body.removeChild(loadingMessage);
+            }
+        }
+        
+        // 🎨 CREATE IDENTICAL EXPORT MATRIX - Same as console display!
+        function createPrintableMatrix(timeSlots, sortedAttendees, filteredMeetings, selectedDate) {
+            // 🚀 USE EXACT SAME LOGIC AS CONSOLE MATRIX!
+            const fastTimeSlots = generateFastTimeSlots(filteredMeetings);
+            
+            let html = '<table class="matrix-table">';
+            
+            // Header row - IDENTICAL to console
+            html += '<thead><tr>';
+            html += '<th class="matrix-time-cell">TIME</th>';
+            
+            sortedAttendees.forEach(attendee => {
+                let displayName = attendee.name;
+                if (displayName.length > 15) {
+                    const parts = displayName.split(' ');
+                    displayName = parts.length > 1 
+                        ? `${parts[0]} ${parts[parts.length - 1][0]}.`
+                        : displayName.substring(0, 12) + '...';
+                }
+                html += `<th class="matrix-attendee-header" title="${attendee.name}">${displayName}</th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            // 🚀 IDENTICAL DATA ROWS - Same logic as generateMatrix()
+            const attendeeMeetings = new Map();
+            sortedAttendees.forEach(attendee => {
+                attendeeMeetings.set(attendee.id, 
+                    filteredMeetings.filter(meeting => 
+                        (meeting.participants && meeting.participants.includes(attendee.id)) ||
+                        (meeting.observers && meeting.observers.includes(attendee.id)) ||
+                        (meeting.consultants && meeting.consultants.includes(attendee.id))
+                    )
+                );
+            });
+            
+            fastTimeSlots.forEach(timeSlot => {
+                // 🌅 Check if this is a DAY TRANSITION row
+                if (timeSlot.isDayTransition) {
+                    html += '<tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;">';
+                    html += `<td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; font-weight: bold !important; text-align: center !important; font-size: 14px !important;">${timeSlot.label}</td>`;
+                    // Fill the entire row with DAY transition color
+                    for (let i = 0; i < sortedAttendees.length; i++) {
+                        html += '<td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;"></td>';
+                    }
+                    html += '</tr>';
+                    return; // Skip the rest of the processing for this slot
                 }
                 
-                alert(`Failed to export: ${error.message}\n\nTry:\n1. Refresh the page\n2. Make sure you're in Matrix View\n3. Generate the matrix first`);
-            }
+                html += '<tr>';
+                html += `<td class="matrix-time-cell">${timeSlot.label}</td>`;
+                
+                sortedAttendees.forEach(participant => {
+                    const participantMeetingsForSlot = attendeeMeetings.get(participant.id);
+                    const meetingInSlot = participantMeetingsForSlot.find(meeting => {
+                        const start = parseDate(meeting.start);
+                        const end = parseDate(meeting.end);
+                        return start && end && start < timeSlot.end && end > timeSlot.start;
+                    });
+                    
+                    if (meetingInSlot) {
+                        // ✨ IDENTICAL CELL CONTENT as console!
+                        let cellContent = '';
+                        
+                        // Role indicator for the participant
+                        let roleIndicator = '';
+                        if (meetingInSlot.observers && meetingInSlot.observers.includes(participant.id)) roleIndicator = ' 👁️';
+                        if (meetingInSlot.consultants && meetingInSlot.consultants.includes(participant.id)) roleIndicator = ' 💼';
+                        
+                        // Activity class
+                        const activityClass = classifyActivity(meetingInSlot);
+                        
+                        // ✨ FULL MEETING TITLE (no cutting) - IDENTICAL!
+                        const fullTitle = meetingInSlot.title;
+                        cellContent = `<div style="font-weight: bold; margin-bottom: 2px;">${fullTitle}${roleIndicator}</div>`;
+                        
+                        // ✨ IDENTICAL LOGIC: Show only observers and consultants (not other participants)
+                        const otherObservers = (meetingInSlot.observers || []).filter(id => id !== participant.id);
+                        const otherConsultants = (meetingInSlot.consultants || []).filter(id => id !== participant.id);
+                        
+                        const allOtherIds = [...otherObservers, ...otherConsultants];
+                        const totalMeetingAttendees = (meetingInSlot.participants?.length || 0) + (meetingInSlot.observers?.length || 0) + (meetingInSlot.consultants?.length || 0);
+                        
+                        // ✨ IDENTICAL SPECIAL MEETING CHECK
+                        const meetingTitle = meetingInSlot.title.toLowerCase();
+                        const isSpecialMeeting = meetingTitle.includes('kick off') || 
+                                                meetingTitle.includes('kick-off') || 
+                                                meetingTitle.includes('kickoff') || 
+                                                meetingTitle.includes('break') || 
+                                                meetingTitle.includes('lunch') || 
+                                                meetingTitle.includes('workshop') || 
+                                                meetingTitle.includes('closing') || 
+                                                meetingTitle.includes('networking') || 
+                                                meetingTitle.includes('survey') || 
+                                                meetingTitle.includes('day 1') || 
+                                                meetingTitle.includes('day 2') ||
+                                                meetingTitle.includes('dc survey') ||
+                                                meetingTitle.includes('dc closing');
+                        
+                        if (isSpecialMeeting) {
+                            // ✨ For special meetings: just show meeting name + room (no names, no "All")
+                            // Meeting title and location already added above, so we don't add anything here
+                        } else if (totalMeetingAttendees >= attendees.length * 0.8) {
+                            // ✨ For large meetings with 80%+ attendance: show "All"
+                            cellContent += `<div style="font-size: 8px; color: #666; line-height: 1.1;">All</div>`;
+                        } else if (allOtherIds.length > 0) {
+                            // ✨ For regular meetings: show ALL names (no +X truncation) - IDENTICAL!
+                            const otherNames = allOtherIds.map(id => {
+                                const attendee = attendees.find(a => a.id === id);
+                                if (!attendee) return 'Unknown';
+                                
+                                // Use first name + last initial for space saving
+                                const nameParts = attendee.name.split(' ');
+                                if (nameParts.length > 1) {
+                                    return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`;
+                                }
+                                return attendee.name.length > 8 ? attendee.name.substring(0, 8) + '.' : attendee.name;
+                            }).filter(name => name !== 'Unknown');
+                            
+                            if (otherNames.length > 0) {
+                                // ✨ Show ALL names - no truncation with +X - IDENTICAL!
+                                cellContent += `<div style="font-size: 8px; color: #666; line-height: 1.1;">${otherNames.join(', ')}</div>`;
+                            }
+                        }
+                        
+                        cellContent += `<div style="font-style: italic; color: #6b7280; font-size: 10px;">${meetingInSlot.location}</div>`;
+                        
+                        html += `<td class="activity-${activityClass}" title="${meetingInSlot.title} - ${meetingInSlot.location} | Others: ${otherObservers.length} observers, ${otherConsultants.length} consultants">${cellContent}</td>`;
+                    } else {
+                        html += '<td></td>';
+                    }
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            return html;
         }
 
         function showWelcomeScreen() {
@@ -4103,6 +4153,385 @@
                 adminToggle.click();
             }
         });
+        
+        // 📸 NEW: MATRIX SCREENSHOT EXPORT FUNCTION! 🎯
+        async function exportMatrixAsScreenshot() {
+            try {
+                console.log("📸 MATRIX SCREENSHOT EXPORT started!");
+                
+                // Show loading message
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-blue-500 text-white py-2 text-center z-50';
+                loadingMessage.innerHTML = '<i class="fas fa-camera fa-spin mr-2"></i> 📸 Taking screenshot of matrix...';
+                document.body.appendChild(loadingMessage);
+                
+                // Find the matrix table
+                const matrixTable = document.querySelector('.matrix-table');
+                
+                if (!matrixTable) {
+                    throw new Error('❌ No matrix table found! Please generate the matrix first in Matrix View.');
+                }
+                
+                // Ask user for format preference
+                const userChoice = confirm("📸 EXPORT FORMAT CHOICE:\n\n✅ Click OK for PDF\n❌ Click Cancel for PNG Image\n\nChoose your preferred format!");
+                const exportFormat = userChoice ? 'pdf' : 'png';
+                
+                // Update loading message
+                loadingMessage.innerHTML = `<i class="fas fa-${exportFormat === 'pdf' ? 'file-pdf' : 'image'} fa-spin mr-2"></i> 📸 Creating ${exportFormat.toUpperCase()}...`;
+                
+                // Wait a moment to let the UI settle
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Create high-quality screenshot of the matrix
+                const canvas = await html2canvas(matrixTable, {
+                    scale: 2, // High resolution
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: 'white',
+                    logging: false, // Reduce console noise
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: matrixTable.scrollWidth,
+                    windowHeight: matrixTable.scrollHeight
+                });
+                
+                // Get date for filename
+                const selectedDate = matrixDateFilter.value;
+                let filename = 'DC_Matrix_Screenshot';
+                if (selectedDate !== 'all') {
+                    const dateStr = new Date(selectedDate).toLocaleDateString().replace(/[\/\\:*?"<>|]/g, '_');
+                    filename += `_${dateStr}`;
+                }
+                
+                if (exportFormat === 'pdf') {
+                    // 📄 EXPORT AS PDF
+                    const { jsPDF } = window.jspdf;
+                    
+                    // Calculate optimal PDF dimensions
+                    const imgWidth = canvas.width;
+                    const imgHeight = canvas.height;
+                    const ratio = imgHeight / imgWidth;
+                    
+                    // Use A4 landscape or A3 if needed
+                    let pdfWidth = 297; // A4 landscape width (mm)
+                    let pdfHeight = 210; // A4 landscape height (mm)
+                    
+                    // If ratio is too tall, use A3
+                    if (ratio > 0.8) {
+                        pdfWidth = 420; // A3 landscape width (mm)
+                        pdfHeight = 297; // A3 landscape height (mm)
+                    }
+                    
+                    const pdf = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: ratio > 0.8 ? 'a3' : 'a4'
+                    });
+                    
+                    // Calculate image dimensions to fit PDF
+                    const maxWidth = pdfWidth - 20; // 10mm margin each side
+                    const maxHeight = pdfHeight - 20; // 10mm margin top/bottom
+                    
+                    let finalWidth, finalHeight;
+                    if (ratio > maxHeight / maxWidth) {
+                        // Height constrained
+                        finalHeight = maxHeight;
+                        finalWidth = finalHeight / ratio;
+                    } else {
+                        // Width constrained
+                        finalWidth = maxWidth;
+                        finalHeight = finalWidth * ratio;
+                    }
+                    
+                    // Center the image
+                    const x = (pdfWidth - finalWidth) / 2;
+                    const y = (pdfHeight - finalHeight) / 2;
+                    
+                    // Add image to PDF
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                    
+                    // Save PDF
+                    pdf.save(`${filename}.pdf`);
+                    
+                    // Update success message
+                    loadingMessage.className = 'fixed top-0 left-0 right-0 bg-green-500 text-white py-2 text-center z-50';
+                    loadingMessage.innerHTML = '✅ 📄 PDF exported successfully!';
+                    
+                } else {
+                    // 🖼️ EXPORT AS PNG IMAGE - SUPER ROBUST VERSION! 
+                    console.log("📸 Starting PNG export...");
+                    console.log("Canvas dimensions:", canvas.width, "x", canvas.height);
+                    
+                    try {
+                        // Method 1: Try toBlob first (most reliable)
+                        console.log("📸 Trying toBlob method...");
+                        canvas.toBlob((blob) => {
+                            console.log("📸 Blob created:", blob ? blob.size + " bytes" : "null");
+                            
+                            if (blob && blob.size > 0) {
+                                try {
+                                    // Create download link with blob
+                                    const link = document.createElement('a');
+                                    link.download = `${filename}.png`;
+                                    link.href = URL.createObjectURL(blob);
+                                    
+                                    // Add to DOM temporarily
+                                    link.style.display = 'none';
+                                    document.body.appendChild(link);
+                                    
+                                    // Force click with timeout
+                                    setTimeout(() => {
+                                        console.log("📸 Clicking download link...");
+                                        link.click();
+                                        
+                                        // Clean up after short delay
+                                        setTimeout(() => {
+                                            if (document.body.contains(link)) {
+                                                document.body.removeChild(link);
+                                            }
+                                            URL.revokeObjectURL(link.href);
+                                            console.log("📸 Cleanup completed");
+                                        }, 500);
+                                    }, 100);
+                                    
+                                    // Update success message
+                                    loadingMessage.className = 'fixed top-0 left-0 right-0 bg-green-500 text-white py-2 text-center z-50';
+                                    loadingMessage.innerHTML = '✅ 🖼️ PNG download started! Check your downloads folder.';
+                                    
+                                } catch (blobError) {
+                                    console.error("📸 Blob download failed:", blobError);
+                                    tryDataURLMethod();
+                                }
+                            } else {
+                                console.warn("📸 Blob creation failed, trying dataURL method...");
+                                tryDataURLMethod();
+                            }
+                        }, 'image/png', 0.9);
+                        
+                        // Fallback function for dataURL method
+                        function tryDataURLMethod() {
+                            console.log("📸 Trying dataURL method as fallback...");
+                            
+                            try {
+                                const dataURL = canvas.toDataURL('image/png', 0.9);
+                                console.log("📸 DataURL created, length:", dataURL.length);
+                                
+                                if (dataURL && dataURL.length > 1000) {
+                                    // Create download link with data URL
+                                    const link = document.createElement('a');
+                                    link.download = `${filename}.png`;
+                                    link.href = dataURL;
+                                    
+                                    // Add to DOM and trigger download
+                                    link.style.display = 'none';
+                                    document.body.appendChild(link);
+                                    
+                                    setTimeout(() => {
+                                        console.log("📸 Clicking dataURL download link...");
+                                        link.click();
+                                        
+                                        setTimeout(() => {
+                                            if (document.body.contains(link)) {
+                                                document.body.removeChild(link);
+                                            }
+                                        }, 500);
+                                    }, 100);
+                                    
+                                    // Update success message
+                                    loadingMessage.className = 'fixed top-0 left-0 right-0 bg-green-500 text-white py-2 text-center z-50';
+                                    loadingMessage.innerHTML = '✅ 🖼️ PNG export completed! Check downloads.';
+                                    
+                                } else {
+                                    throw new Error('DataURL creation failed or too small');
+                                }
+                            } catch (dataURLError) {
+                                console.error("📸 DataURL method also failed:", dataURLError);
+                                showManualSaveOption();
+                            }
+                        }
+                        
+                        // Final fallback: Manual save option
+                        function showManualSaveOption() {
+                            console.log("📸 All download methods failed, showing manual option...");
+                            
+                            try {
+                                // Create a new window with the image
+                                const dataURL = canvas.toDataURL('image/png', 0.9);
+                                const newWindow = window.open();
+                                if (newWindow) {
+                                    newWindow.document.write(`
+                                        <html>
+                                            <head><title>Matrix Screenshot - Right-click to save</title></head>
+                                            <body style="margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f0f0f0;">
+                                                <div style="text-align:center;">
+                                                    <h2>📸 Matrix Screenshot</h2>
+                                                    <p>Right-click on the image below and select "Save image as..."</p>
+                                                    <img src="${dataURL}" alt="Matrix Screenshot" style="max-width:90%; max-height:80vh; border:1px solid #ccc; box-shadow:0 4px 8px rgba(0,0,0,0.1);">
+                                                    <br><br>
+                                                    <button onclick="window.close()" style="padding:10px 20px; background:#5D5CDE; color:white; border:none; border-radius:5px; cursor:pointer;">Close</button>
+                                                </div>
+                                            </body>
+                                        </html>
+                                    `);
+                                    
+                                    loadingMessage.className = 'fixed top-0 left-0 right-0 bg-blue-500 text-white py-2 text-center z-50';
+                                    loadingMessage.innerHTML = '📸 Image opened in new window - Right-click to save!';
+                                } else {
+                                    throw new Error('Popup blocked');
+                                }
+                            } catch (popupError) {
+                                console.error("📸 Manual save option failed:", popupError);
+                                loadingMessage.className = 'fixed top-0 left-0 right-0 bg-red-500 text-white py-2 text-center z-50';
+                                loadingMessage.innerHTML = '❌ PNG export failed. Try using PDF export instead.';
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.error("📸 All PNG export methods failed:", error);
+                        loadingMessage.className = 'fixed top-0 left-0 right-0 bg-red-500 text-white py-2 text-center z-50';
+                        loadingMessage.innerHTML = '❌ PNG export failed. Use PDF export or try again.';
+                    }
+                }
+                
+                // Remove success message after 3 seconds
+                setTimeout(() => {
+                    if (loadingMessage && document.body.contains(loadingMessage)) {
+                        document.body.removeChild(loadingMessage);
+                    }
+                }, 3000);
+                
+                console.log(`✅ ${exportFormat.toUpperCase()} export completed!`);
+                
+            } catch (error) {
+                console.error('❌ Screenshot Export Error:', error);
+                alert(`❌ Failed to export matrix: ${error.message}\n\n🔧 Solution:\n1. Make sure you're in Matrix View\n2. Generate the matrix first\n3. Try again!`);
+                
+                // Remove loading message
+                const loadingMessage = document.querySelector('.fixed.top-0.left-0.right-0');
+                if (loadingMessage) document.body.removeChild(loadingMessage);
+            }
+        }
+        
+        // 🎯 SIMPLE PDF EXPORT WITH DEBUG
+        async function exportVisibleMatrixAsPdf() {
+            console.log("🎯 PDF EXPORT FUNCTION CALLED!");
+            
+            try {
+                // Check if libraries are available
+                if (!window.html2canvas) {
+                    throw new Error("❌ html2canvas library not loaded!");
+                }
+                
+                if (!window.jspdf) {
+                    throw new Error("❌ jsPDF library not loaded!");
+                }
+                
+                console.log("✅ Libraries loaded successfully");
+                
+                // Show loading message
+                alert("📄 Starting PDF export...");
+                
+                // Find the matrix table
+                console.log("🔍 Looking for matrix table...");
+                const matrixTable = document.querySelector('.matrix-table');
+                console.log("Matrix table found:", matrixTable);
+                
+                if (!matrixTable) {
+                    throw new Error('❌ No matrix table found! Please generate the matrix first by going to Matrix View and clicking Refresh Matrix.');
+                }
+                
+                console.log("📸 Taking screenshot with html2canvas...");
+                
+                // Create screenshot with simple settings
+                const canvas = await html2canvas(matrixTable, {
+                    scale: 1,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: 'white',
+                    logging: true
+                });
+                
+                console.log("✅ Screenshot taken, canvas size:", canvas.width, "x", canvas.height);
+                
+                // Create PDF
+                console.log("📄 Creating PDF...");
+                const { jsPDF } = window.jspdf;
+                
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a3' // Use A3 for more space
+                });
+                
+                // Add image to PDF (simple approach)
+                const imgData = canvas.toDataURL('image/png');
+                console.log("🖼️ Image data created, length:", imgData.length);
+                
+                // A3 landscape dimensions
+                const pdfWidth = 420; // A3 landscape width
+                const pdfHeight = 297; // A3 landscape height
+                
+                // Calculate image size to fit
+                const margin = 20;
+                const maxWidth = pdfWidth - (margin * 2);
+                const maxHeight = pdfHeight - (margin * 2);
+                
+                const imgRatio = canvas.height / canvas.width;
+                let finalWidth = maxWidth;
+                let finalHeight = finalWidth * imgRatio;
+                
+                if (finalHeight > maxHeight) {
+                    finalHeight = maxHeight;
+                    finalWidth = finalHeight / imgRatio;
+                }
+                
+                // Center the image
+                const x = (pdfWidth - finalWidth) / 2;
+                const y = (pdfHeight - finalHeight) / 2;
+                
+                console.log(`📐 Adding image to PDF: ${finalWidth}x${finalHeight} at position ${x},${y}`);
+                
+                pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+                
+                // Save PDF
+                const filename = 'DC_Matrix_Export.pdf';
+                console.log("💾 Saving PDF as:", filename);
+                
+                pdf.save(filename);
+                
+                console.log("✅ PDF export completed successfully!");
+                alert("✅ PDF exported successfully! Check your downloads folder.");
+                
+            } catch (error) {
+                console.error('❌ PDF Export Error:', error);
+                alert(`❌ PDF Export Failed!\n\nError: ${error.message}\n\n🔧 Solutions:\n1. Make sure you're in Matrix View\n2. Generate the matrix first (click Refresh Matrix)\n3. Try again\n\nCheck the browser console for more details.`);
+            }
+        }
+        
+        // 🎯 TEST BOUTON PDF EXPORT
+        const exportMatrixPdfBtn = document.getElementById('export-matrix-pdf-btn');
+        console.log("🔍 Export button found:", exportMatrixPdfBtn);
+        
+        if (exportMatrixPdfBtn) {
+            console.log("✅ Adding click listener to export button");
+            
+            exportMatrixPdfBtn.addEventListener('click', function(event) {
+                console.log("🎯 BOUTON CLIQUÉ ! Event:", event);
+                alert("🎯 BOUTON FONCTIONNE ! Test réussi !");
+                
+                // Appeler la vraie fonction
+                exportVisibleMatrixAsPdf();
+            });
+        } else {
+            console.error("❌ Export button NOT FOUND!");
+        }
+        
+        // 🔄 ADD EVENT LISTENER for refresh matrix button
+        const refreshMatrixBtn = document.getElementById('refresh-matrix-btn');
+        if (refreshMatrixBtn) {
+            refreshMatrixBtn.addEventListener('click', generateMatrix);
+        }
         
         // Initialize data loading
         loadData();
