@@ -277,9 +277,9 @@
     <!-- GitHub CSV URLs -->
     <script>
         // URLs for fetching data from GitHub-hosted CSV files
-        const GITHUB_ATTENDEES_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/attendees.csv";
-        const GITHUB_MEETINGS_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/meetings.csv";
-        const GITHUB_LOGO_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/refs/heads/main/logo.png";
+        const GITHUB_ATTENDEES_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/master/attendees.csv";
+        const GITHUB_MEETINGS_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/master/meetings.csv";
+        const GITHUB_LOGO_URL = "https://raw.githubusercontent.com/obourgade/DC-apps/master/logo.png";
         
         // Google Sheets configuration (backup)
         const GOOGLE_SHEET_ID = "your_google_sheet_id_here";
@@ -408,6 +408,10 @@
                         <div class="flex items-center">
                             <span class="badge-role-indicator role-indicator-roleplayer"></span>
                             <span>Role Players</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="badge-role-indicator" style="background-color: #8B5CF6;"></span>
+                            <span>Consultants</span>
                         </div>
                     </div>
                 </div>
@@ -827,9 +831,11 @@
                     
                     try {
                         // Fetch attendees data
+                        console.log("Attempting to fetch attendees from:", GITHUB_ATTENDEES_URL);
                         const attendeesResponse = await fetch(GITHUB_ATTENDEES_URL);
+                        console.log("Attendees response status:", attendeesResponse.status);
                         if (!attendeesResponse.ok) {
-                            throw new Error(`Failed to fetch attendees: ${attendeesResponse.status}`);
+                            throw new Error(`Failed to fetch attendees: ${attendeesResponse.status} - ${attendeesResponse.statusText}`);
                         }
                         
                         const attendeesCsv = await attendeesResponse.text();
@@ -2272,8 +2278,8 @@
                     
                     const badgesContainer = participantsContainer.querySelector('div');
                     
-                    // Check if this meeting includes exactly all attendees (both participants and observers)
-                    const totalMeetingAttendees = (meeting.participants?.length || 0) + (meeting.observers?.length || 0);
+                    // Check if this meeting includes exactly all attendees (participants, observers, consultants)
+                    const totalMeetingAttendees = (meeting.participants?.length || 0) + (meeting.observers?.length || 0) + (meeting.consultants?.length || 0);
                     const totalAttendeeCount = attendees.length;
                     
                     // Only show "All participants" if exactly 100% of attendees are included
@@ -2286,20 +2292,29 @@
                     }
                     // If meeting has more than 15 other people, summarize by types
                     else if (allOthers.length > 15) {
-                        const participantCount = otherParticipants.length;
-                        const observerCount = otherObservers.length;
+                        // UPDATED: Include the selected attendee in the counts
+                        const totalParticipantCount = meeting.participants?.length || 0;
+                        const totalObserverCount = meeting.observers?.length || 0;
+                        const totalConsultantCount = meeting.consultants?.length || 0;
                         
-                        if (participantCount > 0) {
+                        if (totalParticipantCount > 0) {
                             badgesContainer.innerHTML += `
                                 <span class="badge bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-medium">
-                                    ${participantCount} Participants
+                                    ${totalParticipantCount} Participants
                                 </span>
                             `;
                         }
-                        if (observerCount > 0) {
+                        if (totalObserverCount > 0) {
                             badgesContainer.innerHTML += `
                                 <span class="badge bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium">
-                                    ${observerCount} Observers
+                                    ${totalObserverCount} Observers
+                                </span>
+                            `;
+                        }
+                        if (totalConsultantCount > 0) {
+                            badgesContainer.innerHTML += `
+                                <span class="badge bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-xs font-medium">
+                                    ${totalConsultantCount} Consultants
                                 </span>
                             `;
                         }
@@ -2307,13 +2322,15 @@
                     // Otherwise, show individual people with their role indication
                     else {
                         allOthers.forEach(person => {
-                            // Set badge color based on their role in this meeting (participant vs observer)
+                            // Set badge color based on their role in this meeting (participant vs observer vs consultant)
                             let badgeClass = "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
                             
                             if (person.type === 'participant') {
                                 badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
                             } else if (person.type === 'observer') {
                                 badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+                            } else if (person.type === 'consultant') {
+                                badgeClass = "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200";
                             }
                             
                             const badge = document.createElement('span');
@@ -2323,6 +2340,8 @@
                             // Add a small indicator for their type
                             if (person.type === 'observer') {
                                 badge.textContent += ' 👁️';
+                            } else if (person.type === 'consultant') {
+                                badge.textContent += ' 💼';
                             }
                             
                             badgesContainer.appendChild(badge);
@@ -2385,25 +2404,33 @@
                     </div>
                 `;
                 
-                // UPDATED: Add participant and observer count
-                const otherParticipants = (meeting.participants || [])
-                    .filter(id => id !== selectedAttendeeId);
-                const otherObservers = (meeting.observers || [])
-                    .filter(id => id !== selectedAttendeeId);
+                // UPDATED: Add participant, observer and consultant count with totals
+                const totalParticipants = meeting.participants?.length || 0;
+                const totalObservers = meeting.observers?.length || 0;
+                const totalConsultants = meeting.consultants?.length || 0;
+                const totalAll = totalParticipants + totalObservers + totalConsultants;
                 
-                const totalOthers = otherParticipants.length + otherObservers.length;
-                
-                if (totalOthers > 0) {
+                if (totalAll > 0) {
                     const participantInfo = document.createElement('div');
                     participantInfo.className = 'mt-2 text-sm';
                     
                     let infoText = '';
-                    if (otherParticipants.length > 0 && otherObservers.length > 0) {
-                        infoText = `With ${otherParticipants.length} participant${otherParticipants.length !== 1 ? 's' : ''} and ${otherObservers.length} observer${otherObservers.length !== 1 ? 's' : ''}`;
-                    } else if (otherParticipants.length > 0) {
-                        infoText = `With ${otherParticipants.length} other participant${otherParticipants.length !== 1 ? 's' : ''}`;
-                    } else if (otherObservers.length > 0) {
-                        infoText = `With ${otherObservers.length} observer${otherObservers.length !== 1 ? 's' : ''}`;
+                    const infoComponents = [];
+                    
+                    if (totalParticipants > 0) {
+                        infoComponents.push(`${totalParticipants} participant${totalParticipants !== 1 ? 's' : ''}`);
+                    }
+                    if (totalObservers > 0) {
+                        infoComponents.push(`${totalObservers} observer${totalObservers !== 1 ? 's' : ''}`);
+                    }
+                    if (totalConsultants > 0) {
+                        infoComponents.push(`${totalConsultants} consultant${totalConsultants !== 1 ? 's' : ''}`);
+                    }
+                    
+                    if (infoComponents.length > 1) {
+                        infoText = `With ${infoComponents.join(', ')}`;
+                    } else if (infoComponents.length === 1) {
+                        infoText = `With ${infoComponents[0]}`;
                     }
                     
                     participantInfo.innerHTML = `
