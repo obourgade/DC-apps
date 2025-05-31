@@ -493,7 +493,7 @@
                     
                     <div class="mb-4">
                         <h4 class="text-sm font-medium mb-1">Import Meetings CSV</h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">CSV format: id,title,start,end,location,participants</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">CSV format: id,title,start,end,location,participants,observers</p>
                         <div class="flex items-center gap-2">
                             <input type="file" id="meetings-csv" accept=".csv" class="block w-full text-sm text-gray-900 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer" />
                             <button id="download-meeting-template" class="text-sm text-primary">Get Template</button>
@@ -807,7 +807,7 @@
             }
         }
         
-        // Fetch data from GitHub-hosted CSV files
+        // UPDATED: Fetch data from GitHub-hosted CSV files with participants/observers support
         async function loadData() {
             try {
                 // Show loading state
@@ -879,7 +879,7 @@
                         // Debug: Log the column headers
                         console.log("Meeting CSV headers:", Object.keys(meetingsResults.data[0]).join(", "));
                         
-                        // Process meetings data - handle different column structure
+                        // UPDATED: Process meetings data with separate participants and observers support
                         meetings = meetingsResults.data.map(row => {
                             // Map column names to expected properties
                             const meetingInfo = {
@@ -888,26 +888,49 @@
                                 start: row.start || row.Start || row["Start Time"] || row["Start Time "] || "",
                                 end: row.end || row.End || row["End Time"] || row["End Time "] || "",
                                 location: row.location || row.Location || row["Location"] || row["Location "] || "",
-                                participants: []
+                                participants: [],
+                                observers: []
                             };
                             
                             // Log the raw row data to see what we're getting
                             console.log("Raw meeting row:", JSON.stringify(row));
                             
-                            // Extract attendee IDs using a more direct approach
-                            let participantCount = 0;
-                            Object.entries(row).forEach(([key, value], index) => {
-                                // Skip the first 5 columns (meeting details)
-                                if (index < 5) return;
-                                
-                                // If there's a value and it's not empty, add it as participant ID
-                                if (value && String(value).trim() !== "") {
-                                    meetingInfo.participants.push(String(value).trim());
-                                    participantCount++;
+                            // NEW: Handle dedicated participants and observers columns
+                            if (row.participants || row.Participants) {
+                                const participantsStr = row.participants || row.Participants;
+                                if (participantsStr && participantsStr.trim() !== "") {
+                                    meetingInfo.participants = participantsStr.split(',')
+                                        .map(id => id.trim())
+                                        .filter(id => id !== "");
                                 }
-                            });
+                            }
                             
-                            console.log(`Meeting ${meetingInfo.id} has ${participantCount} participants added`);
+                            if (row.observers || row.Observers) {
+                                const observersStr = row.observers || row.Observers;
+                                if (observersStr && observersStr.trim() !== "") {
+                                    meetingInfo.observers = observersStr.split(',')
+                                        .map(id => id.trim())
+                                        .filter(id => id !== "");
+                                }
+                            }
+                            
+                            // FALLBACK: If no dedicated columns, extract from individual columns (legacy support)
+                            if (meetingInfo.participants.length === 0 && meetingInfo.observers.length === 0) {
+                                let participantCount = 0;
+                                Object.entries(row).forEach(([key, value], index) => {
+                                    // Skip the first 5 columns (meeting details) and skip participants/observers columns
+                                    if (index < 5 || key.toLowerCase().includes('participants') || key.toLowerCase().includes('observers')) return;
+                                    
+                                    // If there's a value and it's not empty, add it as participant ID (legacy behavior)
+                                    if (value && String(value).trim() !== "") {
+                                        meetingInfo.participants.push(String(value).trim());
+                                        participantCount++;
+                                    }
+                                });
+                                console.log(`Meeting ${meetingInfo.id} has ${participantCount} participants added (legacy mode)`);
+                            } else {
+                                console.log(`Meeting ${meetingInfo.id} has ${meetingInfo.participants.length} participants and ${meetingInfo.observers.length} observers`);
+                            }
                             
                             return meetingInfo;
                         });
@@ -954,7 +977,7 @@
                 { id: "10", name: "Riadh Dehimat", role: "observer,roleplayer" }
             ];
             
-            // Sample meetings data
+            // UPDATED: Sample meetings data with separate participants and observers
             meetings = [
                 {
                     id: "M1",
@@ -962,7 +985,8 @@
                     start: `${dateStr}T08:30:00`,
                     end: `${dateStr}T09:30:00`,
                     location: "EVRY",
-                    participants: ["1", "2", "3", "4", "5"]
+                    participants: ["1", "2", "3", "4", "5"],
+                    observers: ["6", "8"]
                 },
                 {
                     id: "M2",
@@ -970,7 +994,8 @@
                     start: `${dateStr}T09:45:00`,
                     end: `${dateStr}T10:30:00`,
                     location: "Room B",
-                    participants: ["1", "5", "6", "7"]
+                    participants: ["1", "5"],
+                    observers: ["6", "7"]
                 }
             ];
             
@@ -1819,7 +1844,7 @@
             });
         }
         
-        // Handle meetings CSV upload
+        // UPDATED: Handle meetings CSV upload with participants/observers support
         function handleMeetingsCsvUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1845,19 +1870,42 @@
                                     start: row.start || row.Start || row["Start Time"] || "",
                                     end: row.end || row.End || row["End Time"] || "",
                                     location: row.location || row.Location || row["Location"] || "",
-                                    participants: []
+                                    participants: [],
+                                    observers: []
                                 };
                                 
-                                // Extract participant IDs from any remaining columns
-                                Object.keys(row).forEach(key => {
-                                    if (!["id", "ID", "Meeting ID", "title", "Title", "Meeting Title", 
-                                        "start", "Start", "Start Time", "end", "End", "End Time", 
-                                        "location", "Location"].includes(key) && 
-                                        row[key] && row[key].trim() !== "") {
-                                        
-                                        meetingInfo.participants.push(row[key].toString());
+                                // NEW: Handle dedicated participants and observers columns
+                                if (row.participants || row.Participants) {
+                                    const participantsStr = row.participants || row.Participants;
+                                    if (participantsStr && participantsStr.trim() !== "") {
+                                        meetingInfo.participants = participantsStr.split(',')
+                                            .map(id => id.trim())
+                                            .filter(id => id !== "");
                                     }
-                                });
+                                }
+                                
+                                if (row.observers || row.Observers) {
+                                    const observersStr = row.observers || row.Observers;
+                                    if (observersStr && observersStr.trim() !== "") {
+                                        meetingInfo.observers = observersStr.split(',')
+                                            .map(id => id.trim())
+                                            .filter(id => id !== "");
+                                    }
+                                }
+                                
+                                // FALLBACK: If no dedicated columns, extract from remaining columns (legacy)
+                                if (meetingInfo.participants.length === 0 && meetingInfo.observers.length === 0) {
+                                    Object.keys(row).forEach(key => {
+                                        if (!["id", "ID", "Meeting ID", "title", "Title", "Meeting Title", 
+                                            "start", "Start", "Start Time", "end", "End", "End Time", 
+                                            "location", "Location", "participants", "Participants", 
+                                            "observers", "Observers"].includes(key) && 
+                                            row[key] && row[key].trim() !== "") {
+                                            
+                                            meetingInfo.participants.push(row[key].toString().trim());
+                                        }
+                                    });
+                                }
                                 
                                 newMeetings.push(meetingInfo);
                             }
@@ -1909,13 +1957,13 @@
             downloadCsv(csvContent, 'attendees_template.csv');
         }
         
-        // Download meetings CSV template
+        // UPDATED: Download meetings CSV template with participants/observers columns
         function downloadMeetingsCsvTemplate() {
             const dateStr = new Date().toISOString().split('T')[0];
             const csvData = [
-                ['ID', 'Title', 'Start', 'End', 'Location', '1', '2', '3', '4'],
-                ['M1', 'Product Strategy', `${dateStr}T09:00:00`, `${dateStr}T10:00:00`, 'Room A', '1', '2', '3', '4'],
-                ['M2', 'Design Review', `${dateStr}T10:30:00`, `${dateStr}T11:30:00`, 'Room B', '1', '5', '', '']
+                ['ID', 'Title', 'Start', 'End', 'Location', 'Participants', 'Observers'],
+                ['M1', 'Product Strategy', `${dateStr}T09:00:00`, `${dateStr}T10:00:00`, 'Room A', '1,2,3,4', '6,8'],
+                ['M2', 'Design Review', `${dateStr}T10:30:00`, `${dateStr}T11:30:00`, 'Room B', '1,5', '6,7']
             ];
             
             const csvContent = generateCsv(csvData);
@@ -1994,7 +2042,7 @@
                 
                 let html = '<div class="font-medium mb-2">Meetings Preview:</div>';
                 html += '<table class="w-full">';
-                html += '<thead><tr><th class="text-left">ID</th><th class="text-left">Title</th><th class="text-left">Time</th><th class="text-left">Participants</th></tr></thead>';
+                html += '<thead><tr><th class="text-left">ID</th><th class="text-left">Title</th><th class="text-left">Time</th><th class="text-left">Participants</th><th class="text-left">Observers</th></tr></thead>';
                 html += '<tbody>';
                 
                 // Show up to 5 meetings in preview
@@ -2004,11 +2052,15 @@
                     const endTime = new Date(meeting.end);
                     const timeStr = `${startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
                     
+                    const participantsCount = meeting.participants ? meeting.participants.length : 0;
+                    const observersCount = meeting.observers ? meeting.observers.length : 0;
+                    
                     html += `<tr>
                         <td>${meeting.id}</td>
                         <td>${meeting.title}</td>
                         <td>${timeStr}</td>
-                        <td>${meeting.participants.length} people</td>
+                        <td>${participantsCount} people</td>
+                        <td>${observersCount} people</td>
                     </tr>`;
                 });
                 
@@ -2022,7 +2074,7 @@
             }
         }
         
-        // Show personal agenda for selected attendee
+        // UPDATED: Show personal agenda with participants/observers support
         function showPersonalAgenda() {
             const selectedAttendeeId = attendeeSelect.value;
             
@@ -2067,10 +2119,12 @@
             // Show name and role badges
             attendeeNameDisplay.innerHTML = `${selectedAttendee.name}'s Agenda ${roleBadges}`;
             
-            // Filter meetings for the selected attendee
-            const attendeeMeetings = meetings.filter(meeting => 
-                meeting.participants.includes(selectedAttendeeId)
-            ).sort((a, b) => new Date(a.start) - new Date(b.start));
+            // UPDATED: Filter meetings for the selected attendee (check both participants and observers)
+            const attendeeMeetings = meetings.filter(meeting => {
+                const isParticipant = meeting.participants && meeting.participants.includes(selectedAttendeeId);
+                const isObserver = meeting.observers && meeting.observers.includes(selectedAttendeeId);
+                return isParticipant || isObserver;
+            }).sort((a, b) => new Date(a.start) - new Date(b.start));
             
             // Calculate stats
             updateAgendaStats(selectedAttendeeId, attendeeMeetings);
@@ -2098,7 +2152,7 @@
             personalAgenda.classList.remove('hidden');
         }
         
-        // Render card view of meetings
+        // UPDATED: Render card view with participants/observers support
         function renderCardView(selectedAttendeeId, attendeeMeetings) {
             attendeeMeetings.forEach(meeting => {
                 const startTime = new Date(meeting.start);
@@ -2106,13 +2160,22 @@
                 const durationMs = endTime - startTime;
                 const durationMinutes = Math.round(durationMs / 60000);
                 
-                // Get other participants' names and roles
-                const otherParticipants = meeting.participants
+                // UPDATED: Get other participants and observers, exclude the selected attendee
+                const otherParticipants = (meeting.participants || [])
                     .filter(id => id !== selectedAttendeeId)
                     .map(id => {
                         const attendee = attendees.find(a => a.id === id);
-                        return attendee || { id, name: 'Unknown', role: '' };
+                        return attendee ? { ...attendee, type: 'participant' } : { id, name: 'Unknown', role: '', type: 'participant' };
                     });
+                
+                const otherObservers = (meeting.observers || [])
+                    .filter(id => id !== selectedAttendeeId)
+                    .map(id => {
+                        const attendee = attendees.find(a => a.id === id);
+                        return attendee ? { ...attendee, type: 'observer' } : { id, name: 'Unknown', role: '', type: 'observer' };
+                    });
+                
+                const allOthers = [...otherParticipants, ...otherObservers];
                 
                 // Check if meeting is happening now
                 const now = new Date();
@@ -2151,8 +2214,8 @@
                     </div>
                 `;
                 
-                // Add participant information
-                if (otherParticipants.length > 0) {
+                // UPDATED: Add participant information with separation between participants and observers
+                if (allOthers.length > 0) {
                     // Create a container for the participants
                     const participantsContainer = document.createElement('div');
                     participantsContainer.className = 'mt-3';
@@ -2163,82 +2226,59 @@
                     
                     const badgesContainer = participantsContainer.querySelector('div');
                     
-                    // Check if this meeting includes exactly all attendees
-                    const meetingParticipantCount = meeting.participants.length;
+                    // Check if this meeting includes exactly all attendees (both participants and observers)
+                    const totalMeetingAttendees = (meeting.participants?.length || 0) + (meeting.observers?.length || 0);
                     const totalAttendeeCount = attendees.length;
                     
                     // Only show "All participants" if exactly 100% of attendees are included
-                    if (meetingParticipantCount === totalAttendeeCount) {
+                    if (totalMeetingAttendees === totalAttendeeCount) {
                         badgesContainer.innerHTML = `
                             <span class="badge bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
-                                All participants (${meetingParticipantCount} people)
+                                All participants (${totalMeetingAttendees} people)
                             </span>
                         `;
                     }
-                    // If meeting has more than 15 other participants, summarize by roles
-                    else if (otherParticipants.length > 15) {
-                        // Count by role
-                        const roleCounts = {
-                            participant: 0,
-                            observer: 0,
-                            roleplayer: 0
-                        };
+                    // If meeting has more than 15 other people, summarize by types
+                    else if (allOthers.length > 15) {
+                        const participantCount = otherParticipants.length;
+                        const observerCount = otherObservers.length;
                         
-                        otherParticipants.forEach(attendee => {
-                            if (!attendee.role) {
-                                roleCounts.participant++;
-                                return;
-                            }
-                            
-                            const roles = attendee.role.split(',').map(r => r.trim());
-                            if (roles.includes('participant')) roleCounts.participant++;
-                            if (roles.includes('observer')) roleCounts.observer++;
-                            if (roles.includes('roleplayer')) roleCounts.roleplayer++;
-                        });
-                        
-                        // Create summary badges
-                        if (roleCounts.participant > 0) {
+                        if (participantCount > 0) {
                             badgesContainer.innerHTML += `
                                 <span class="badge bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-medium">
-                                    ${roleCounts.participant} Participants
+                                    ${participantCount} Participants
                                 </span>
                             `;
                         }
-                        if (roleCounts.observer > 0) {
+                        if (observerCount > 0) {
                             badgesContainer.innerHTML += `
                                 <span class="badge bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium">
-                                    ${roleCounts.observer} Observers
-                                </span>
-                            `;
-                        }
-                        if (roleCounts.roleplayer > 0) {
-                            badgesContainer.innerHTML += `
-                                <span class="badge bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-xs font-medium">
-                                    ${roleCounts.roleplayer} Role Players
+                                    ${observerCount} Observers
                                 </span>
                             `;
                         }
                     }
-                    // Otherwise, show individual participants
+                    // Otherwise, show individual people with their role indication
                     else {
-                        otherParticipants.forEach(attendee => {
-                            // Set badge color based on role
+                        allOthers.forEach(person => {
+                            // Set badge color based on their role in this meeting (participant vs observer)
                             let badgeClass = "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
                             
-                            if (attendee.role) {
-                                const roleLower = attendee.role.toLowerCase();
-                                if (roleLower.includes('participant')) {
-                                    badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
-                                } else if (roleLower.includes('observer')) {
-                                    badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
-                                } else if (roleLower.includes('roleplayer') || roleLower.includes('role player')) {
-                                    badgeClass = "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200";
-                                }
+                            if (person.type === 'participant') {
+                                badgeClass = "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+                            } else if (person.type === 'observer') {
+                                badgeClass = "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
                             }
                             
                             const badge = document.createElement('span');
                             badge.className = `badge ${badgeClass} px-2 py-1 rounded-full text-xs font-medium`;
-                            badge.textContent = attendee.name;
+                            badge.textContent = person.name;
+                            
+                            // Add a small indicator for their type
+                            if (person.type === 'observer') {
+                                badge.textContent += ' 👁️';
+                            }
+                            
                             badgesContainer.appendChild(badge);
                         });
                     }
@@ -2250,7 +2290,7 @@
             });
         }
         
-        // Render timeline view of meetings
+        // UPDATED: Render timeline view with participants/observers support
         function renderTimelineView(selectedAttendeeId, attendeeMeetings) {
             attendeeMeetings.forEach((meeting, index) => {
                 const startTime = new Date(meeting.start);
@@ -2299,19 +2339,29 @@
                     </div>
                 `;
                 
-                // Add participant count
-                const otherParticipants = meeting.participants
-                    .filter(id => id !== selectedAttendeeId)
-                    .map(id => {
-                        const attendee = attendees.find(a => a.id === id);
-                        return attendee || { id, name: 'Unknown', role: '' };
-                    });
+                // UPDATED: Add participant and observer count
+                const otherParticipants = (meeting.participants || [])
+                    .filter(id => id !== selectedAttendeeId);
+                const otherObservers = (meeting.observers || [])
+                    .filter(id => id !== selectedAttendeeId);
                 
-                if (otherParticipants.length > 0) {
+                const totalOthers = otherParticipants.length + otherObservers.length;
+                
+                if (totalOthers > 0) {
                     const participantInfo = document.createElement('div');
                     participantInfo.className = 'mt-2 text-sm';
+                    
+                    let infoText = '';
+                    if (otherParticipants.length > 0 && otherObservers.length > 0) {
+                        infoText = `With ${otherParticipants.length} participant${otherParticipants.length !== 1 ? 's' : ''} and ${otherObservers.length} observer${otherObservers.length !== 1 ? 's' : ''}`;
+                    } else if (otherParticipants.length > 0) {
+                        infoText = `With ${otherParticipants.length} other participant${otherParticipants.length !== 1 ? 's' : ''}`;
+                    } else if (otherObservers.length > 0) {
+                        infoText = `With ${otherObservers.length} observer${otherObservers.length !== 1 ? 's' : ''}`;
+                    }
+                    
                     participantInfo.innerHTML = `
-                        <span class="text-gray-500">With ${otherParticipants.length} other ${otherParticipants.length === 1 ? 'person' : 'people'}</span>
+                        <span class="text-gray-500">${infoText}</span>
                     `;
                     meetingCard.appendChild(participantInfo);
                 }
