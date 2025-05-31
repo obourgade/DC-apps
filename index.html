@@ -23,6 +23,7 @@
                         secondary: '#30A46C', // for observers/role players
                         observer: '#30A46C',  // Green color for observers
                         roleplayer: '#F97316', // Orange color for role players
+                        consultant: '#8B5CF6', // Purple color for consultants
                     },
                     fontFamily: {
                         sans: ['Poppins', 'sans-serif'],
@@ -163,6 +164,10 @@
         
         .badge-header.roleplayer {
             background-color: #F97316; /* Orange for role players */
+        }
+        
+        .badge-header.consultant {
+            background-color: #8B5CF6; /* Purple for consultants */
         }
         
         .badge-content {
@@ -802,6 +807,8 @@
                 return 'observer';
             } else if (roleLower.includes('roleplayer') || roleLower.includes('role player')) {
                 return 'roleplayer';
+            } else if (roleLower.includes('consultant')) {
+                return 'consultant';
             } else {
                 return 'participant';
             }
@@ -879,7 +886,7 @@
                         // Debug: Log the column headers
                         console.log("Meeting CSV headers:", Object.keys(meetingsResults.data[0]).join(", "));
                         
-                        // UPDATED: Process meetings data with separate participants and observers support
+                        // UPDATED: Process meetings data with participants, observers, and consultants support
                         meetings = meetingsResults.data.map(row => {
                             // Map column names to expected properties
                             const meetingInfo = {
@@ -889,13 +896,14 @@
                                 end: row.end || row.End || row["End Time"] || row["End Time "] || "",
                                 location: row.location || row.Location || row["Location"] || row["Location "] || "",
                                 participants: [],
-                                observers: []
+                                observers: [],
+                                consultants: []
                             };
                             
                             // Log the raw row data to see what we're getting
                             console.log("Raw meeting row:", JSON.stringify(row));
                             
-                            // NEW: Handle dedicated participants and observers columns
+                            // NEW: Handle dedicated participants, observers, and consultants columns
                             if (row.participants || row.Participants) {
                                 const participantsStr = row.participants || row.Participants;
                                 if (participantsStr && participantsStr.trim() !== "") {
@@ -914,22 +922,52 @@
                                 }
                             }
                             
-                            // FALLBACK: If no dedicated columns, extract from individual columns (legacy support)
-                            if (meetingInfo.participants.length === 0 && meetingInfo.observers.length === 0) {
-                                let participantCount = 0;
-                                Object.entries(row).forEach(([key, value], index) => {
-                                    // Skip the first 5 columns (meeting details) and skip participants/observers columns
-                                    if (index < 5 || key.toLowerCase().includes('participants') || key.toLowerCase().includes('observers')) return;
+                            if (row.consultants || row.Consultants) {
+                                const consultantsStr = row.consultants || row.Consultants;
+                                if (consultantsStr && consultantsStr.trim() !== "") {
+                                    meetingInfo.consultants = consultantsStr.split(',')
+                                        .map(id => id.trim())
+                                        .filter(id => id !== "");
+                                }
+                            }
+                            
+                            // IMPROVED: Handle individual column format (participant1, observer1, consultant1, etc.)
+                            if (meetingInfo.participants.length === 0 && meetingInfo.observers.length === 0 && meetingInfo.consultants.length === 0) {
+                                console.log(`Processing meeting ${meetingInfo.id} - individual columns mode`);
+                                console.log(`Available columns:`, Object.keys(row));
+                                
+                                Object.entries(row).forEach(([key, value]) => {
+                                    // Skip basic meeting info columns
+                                    if (['id', 'ID', 'title', 'Title', 'start', 'Start', 'end', 'End', 'location', 'Location'].includes(key)) return;
                                     
-                                    // If there's a value and it's not empty, add it as participant ID (legacy behavior)
+                                    // If there's a value and it's not empty
                                     if (value && String(value).trim() !== "") {
-                                        meetingInfo.participants.push(String(value).trim());
-                                        participantCount++;
+                                        const attendeeId = String(value).trim();
+                                        
+                                        // Determine type based on column name
+                                        if (key.toLowerCase().startsWith('participant')) {
+                                            console.log(`Adding participant: ${attendeeId} from column ${key}`);
+                                            meetingInfo.participants.push(attendeeId);
+                                        } else if (key.toLowerCase().startsWith('observer')) {
+                                            console.log(`Adding observer: ${attendeeId} from column ${key}`);
+                                            meetingInfo.observers.push(attendeeId);
+                                        } else if (key.toLowerCase().startsWith('consultant')) {
+                                            console.log(`Adding consultant: ${attendeeId} from column ${key}`);
+                                            meetingInfo.consultants.push(attendeeId);
+                                        } else {
+                                            console.log(`Adding as participant (fallback): ${attendeeId} from column ${key}`);
+                                            // Fallback: treat as participant if no clear type
+                                            meetingInfo.participants.push(attendeeId);
+                                        }
                                     }
                                 });
-                                console.log(`Meeting ${meetingInfo.id} has ${participantCount} participants added (legacy mode)`);
+                                
+                                console.log(`Meeting ${meetingInfo.id} FINAL COUNT: ${meetingInfo.participants.length} participants, ${meetingInfo.observers.length} observers, ${meetingInfo.consultants.length} consultants`);
+                                console.log(`Participants: [${meetingInfo.participants.join(', ')}]`);
+                                console.log(`Observers: [${meetingInfo.observers.join(', ')}]`);
+                                console.log(`Consultants: [${meetingInfo.consultants.join(', ')}]`);
                             } else {
-                                console.log(`Meeting ${meetingInfo.id} has ${meetingInfo.participants.length} participants and ${meetingInfo.observers.length} observers`);
+                                console.log(`Meeting ${meetingInfo.id} has ${meetingInfo.participants.length} participants, ${meetingInfo.observers.length} observers, and ${meetingInfo.consultants.length} consultants (comma-separated mode)`);
                             }
                             
                             return meetingInfo;
@@ -2119,11 +2157,12 @@
             // Show name and role badges
             attendeeNameDisplay.innerHTML = `${selectedAttendee.name}'s Agenda ${roleBadges}`;
             
-            // UPDATED: Filter meetings for the selected attendee (check both participants and observers)
+            // UPDATED: Filter meetings for the selected attendee (check participants, observers, and consultants)
             const attendeeMeetings = meetings.filter(meeting => {
                 const isParticipant = meeting.participants && meeting.participants.includes(selectedAttendeeId);
                 const isObserver = meeting.observers && meeting.observers.includes(selectedAttendeeId);
-                return isParticipant || isObserver;
+                const isConsultant = meeting.consultants && meeting.consultants.includes(selectedAttendeeId);
+                return isParticipant || isObserver || isConsultant;
             }).sort((a, b) => new Date(a.start) - new Date(b.start));
             
             // Calculate stats
@@ -2160,7 +2199,7 @@
                 const durationMs = endTime - startTime;
                 const durationMinutes = Math.round(durationMs / 60000);
                 
-                // UPDATED: Get other participants and observers, exclude the selected attendee
+                // UPDATED: Get other participants, observers, and consultants, exclude the selected attendee
                 const otherParticipants = (meeting.participants || [])
                     .filter(id => id !== selectedAttendeeId)
                     .map(id => {
@@ -2175,7 +2214,14 @@
                         return attendee ? { ...attendee, type: 'observer' } : { id, name: 'Unknown', role: '', type: 'observer' };
                     });
                 
-                const allOthers = [...otherParticipants, ...otherObservers];
+                const otherConsultants = (meeting.consultants || [])
+                    .filter(id => id !== selectedAttendeeId)
+                    .map(id => {
+                        const attendee = attendees.find(a => a.id === id);
+                        return attendee ? { ...attendee, type: 'consultant' } : { id, name: 'Unknown', role: '', type: 'consultant' };
+                    });
+                
+                const allOthers = [...otherParticipants, ...otherObservers, ...otherConsultants];
                 
                 // Check if meeting is happening now
                 const now = new Date();
