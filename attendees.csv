@@ -1,57 +1,56 @@
-﻿ID,Name,Role
-1,Joanna K,Participant
-2,Kivilcim E,Participant
-3,Magdalena D,Participant
-4,Melanie D,Participant
-5,Joanna O,Participant
-6,Loic G,Participant
-7,Olivia D,Participant
-8,Robert W,Participant
-9,Sarah M,Participant
-10,Riadh D,Participant
-11,Quentin B,Participant
-12,Banu E,Participant
-13,Kate E,Participant
-14,Frankii B,Participant
-15,Wajdi G,Participant
-16,Agnieszka P,Participant
-17,Cyril H,Participant
-18,Melis S,Participant
-19,Seda T,Participant
-20,Semih G,Participant
-21,Lukasz G,Participant
-22,Ben R ,Participant
-23,Vincent R,Participant
-24,Hamdi K,Participant
-25,Xavier DB,Observer
-26,Thomas A,Observer
-27,Eren K,Observer
-28,David V,Observer
-29,Scott C,Observer
-30,Guillaume H,Observer
-31,Sebastian P,Observer
-32,Robert M,Observer
-33,Peter R,Observer
-34,Amel M,Observer
-35,Nicolas M,Observer
-36,Peter D,Observer
-37,Ionut Z,Observer
-38,TBC,Observer
-39,David A,"Observer, Role Player"
-40,TBC,"Observer, Role Player"
-41,Manfred E,"Observer, Role Player"
-42,Jean Marc C,"Observer, Role Player"
-43,Monika P,"Observer, Role Player"
-44,Simon P,"Observer, Role Player"
-45,Alain B,"Observer, Role Player"
-46,Lisa M,"Observer, Role Player"
-47,Justine G,Observer
-48,Justine S,Observer
-49,Lucy G,Observer
-50,Paul H,Observer
-51,Maggie J,Consultant
-52,Stacey Z,Consultant
-53,Antonia L,Consultant
-54,Sam B,Consultant
-55,Helen F,Consultant
-56,Olivier G,Consultant
+﻿ID,Name,Role,,
+1,Quentin B,Participant,,
+2,Magdalena D,Participant,,
+3,Kivilcim E,Participant,,
+4,Melanie D,Participant,,
+5,Kate E,Participant,,
+6,Sarah M,Participant,,
+7,Joanna O,Participant,,
+8,Hamdi K,Participant,,
+9,Vincent R,Participant,,
+10,Loic G,Participant,,
+11,Lukasz G,Participant,,
+12,Olivia D,Participant,,
+13,Agnieszka P,Participant,,
+14,Wajdi G,Participant,,
+15,Seda T,Participant,,
+16,Banu E,Participant,,
+17,Ben R,Participant,,
+18,Frankii B,Participant,,
+19,Joanna K,Participant,,
+20,Semih G,Participant,,
+21,Robert W,Participant,,
+22,Cyril H,Participant,,
+23,Melis S,Participant,,
+24,Riadh D,Participant,,
+25,Nicolas M,Observer,,
+26,Amel M,Observer,,
+27,Justin S,Observer,,
+28,David V,Observer,,
+29,Lisa M,"Observer, Role Player",,
+30,Peter D,Observer,,
+31,Jean Marc C,"Observer, Role Player",,
+32,Thomas A,Observer,,
+33,Monika P,"Observer, Role Player",,
+34,Guillaume H,Observer,,
+35,Justin G,Observer,,
+36,Xavier DB,Observer,,
+37,Lucy G,Observer,,
+38,Marcin G,Observer,,
+39,Alain B,"Observer, Role Player",,
+40,Sebastian P,"Observer, Role Player",,
+41,Berk A,Observer,,
+42,Ionut Z,Observer,,
+43,Mike N,"Observer, Role Player",,
+44,Robert W,Observer,,
+45,Paul H,Observer,,
+46,Scott C,Observer,,
+47,Peter R,Observer,,
+48,Olivier G,Consultant,,
+49,Sam B,Consultant,,
+50,Antonia L,Consultant,,
+51,Helen F,Consultant,,
+52,Maggie J,Consultant,,
+53,Stacey Z,Consultant,,
+54,Tracy M,Consultant,,
+55,Sofie VV,Consultant,,
